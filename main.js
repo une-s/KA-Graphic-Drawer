@@ -21,15 +21,23 @@ var main = function() {
              * There is one root component, which contains
              * child components, which in turn may contain
              * child components etc.
-             * The most generic and superclass of all
-             * components is Component. Subclasses include
-             * Button, Canvas, Slider, ...
+             * The most generic component class and
+             * superclass of all components is Component.
+             * Subclasses include Button, Canvas, Slider, …
              */
             
+            // The currently pressed comp and its ancestors
+            // until no more propagation
             var _pressedComps = [];
+            // All keyboard focusable components
             var _focusableComps = [];
+            // Currently focused component
             var _focusedComp;
+            // Currently hovered component
             var _hoveredComp;
+            // Whether changes exist. Contains a bool plus
+            // 0 or more functions, each returning a bool.
+            // Must redraw view if at least one is  true.
             var _changes = [ false ];
             
             var _getCommonAncestor;
