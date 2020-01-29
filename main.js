@@ -967,6 +967,10 @@ var main = function() {
                 mouseReleased: function(e) {
                     this.setActive(false);
                 },
+                mouseScrolled: function(scroll) {
+                    this.setValue(this.value + scroll);
+                    return false;
+                },
                 setActive: function(active) {
                     active = !!active;
                     if(active !== this.isActive) {
