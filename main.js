@@ -1471,13 +1471,24 @@ var main = function() {
                 },
                 update: function() {
                     var top = 0;
-                    var bottom = this.height;
+                    var bottom = 0;
+                    var scroll = 0;
                     for(var i = 0; i < this.children.length - 3; i++) {
                         var comp = this.children[i];
                         top = pjs.min(top, comp.y);
                         bottom = pjs.max(bottom, comp.y + comp.height);
                     }
-                    if(top !== this.top || bottom !== this.bottom) {
+                    if(top < 0 && bottom < this.height) {
+                        scroll = pjs.min(-top, this.height - bottom);
+                        top += scroll;
+                        bottom += scroll;
+                        for(var i = 0; i < this.children.length - 3; i++) {
+                            var comp = this.children[i];
+                            comp.setLocation(comp.x, comp.y + scroll);
+                        }
+                    }
+                    bottom = pjs.max(bottom, this.height);
+                    if(top !== this.top || bottom !== this.bottom || scroll !== 0) {
                         this.top = top;
                         this.bottom = bottom;
                         this.updateScrollbar();
