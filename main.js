@@ -26,6 +26,8 @@ var main = function() {
              * Subclasses include Button, Canvas, Slider, …
              */
             
+            // Private variables
+            
             // The currently pressed comp and its ancestors
             // until no more propagation
             var _pressedComps = [];
@@ -44,31 +46,47 @@ var main = function() {
             
             // Constructor
             var Component = function(config) {
+                // Make sure config object is not null
                 config = config || {};
+
+                // Initialize comp based on config values
+
+                // Set parent
                 (config.parent || Component.root).addChild(this, config);
+                // Init children
                 this.children = [];
+                // Set position
                 if(config.x) { this.x = config.x; }
                 if(config.y) { this.y = config.y; }
                 this.globalX = this.parent.globalX + this.x;
                 this.globalY = this.parent.globalY + this.y;
+                // Set size
                 this.width  = config.width  || this.parent.width;
                 this.height = config.height || this.parent.height;
+                // Create graphics
                 this.graphics = Graphics.create(this.width, this.height);
+                // Set background color
                 if(config.background !== undefined)
                     { this.background = config.background; }
+                // Set foreground color
                 if(config.foreground !== undefined)
                     { this.foreground = config.foreground; }
+                // Set draw function
                 if(config.draw)
                     { this.draw = config.draw; }
                 if(config.needsRedraw)
                     { this.needsRedraw = config.needsRedraw; }
+                // Set whether hidden
                 if(config.hidden)
                     { this.hidden = config.hidden; }
+                // Set whether to crop to parent
                 if( config.cropToParent ||
                     (config.cropToParent = this.parent.cropToParent) )
                     { this.cropToParent = config.cropToParent; }
+                // Add onResize listener
                 if(config.onResize)
                     { this.onResize = config.onResize; }
+                // Add mouse listeners
                 if(config.mousePressed)
                     { this.mousePressed = config.mousePressed; }
                 if(config.mouseDragged)
@@ -81,15 +99,20 @@ var main = function() {
                     { this.mouseLeft = config.mouseLeft; }
                 if(config.mouseScrolled)
                     { this.mouseScrolled = config.mouseScrolled; }
+                // Add keyboard listeners
                 if(config.keyPressed ) { this.keyPressed  = config.keyPressed; }
                 if(config.keyTyped   ) { this.keyTyped    = config.keyTyped; }
                 if(config.keyReleased) { this.keyReleased = config.keyReleased; }
+                // Add focus listeners
                 if(config.focusGained) { this.focusGained = config.focusGained; }
                 if(config.focusLost  ) { this.focusLost   = config.focusLost; }
+                // Set whether focusable
                 if(config.focusable !== undefined) {
                     this.focusable = !!config.focusable;
                 }
+                // If focusable
                 if(this.focusable) {
+                    // Init focusable component
                     this.tabIndex = _focusableComps.length;
                     _focusableComps.push(this);
                 }
@@ -254,53 +277,73 @@ var main = function() {
                         this.children.push(comp);
                     }
                 },
+                // Remove child from component
                 removeChild: function(index) {
                     this.children[index].hide();
                     this.children.splice(index, 1);
                     Component.setChange();
                 },
+                // Get descendant at point
                 getDescendantAt: function(x, y) {
+                    // Switch to global coords
                     var globalX = this.globalX + x;
                     var globalY = this.globalY + y;
+                    // For each child
                     for(var i = this.children.length - 1; i >= 0; i--) {
                         var child = this.children[i];
+                        // If child visible and contains pt
                         if(!child.hidden && child.containsGlobalPt(globalX, globalY)) {
+                            // Recursively get descendant
                             var desc = child.getDescendantAt(x - child.x, y - child.y);
+                            // Return descendant or child
                             return desc || child;
                         }
                     }
                 },
+                // Press this component
                 press: function(x, y) {
                     if(!this.isPressed) {
                         this.isPressed = true;
                         _pressedComps.push(this);
+                        // If has mousePressed listener
                         if(this.mousePressed) {
+                            // Trigger event on listener
                             return this.mousePressed({x:x, y:y});
                         }
                     }
                 },
+                // Hover this component
                 hover: function() {
+                    // Do nothing if already hovered
                     if(_hoveredComp === this) {
                         return;
                     }
-                    var comp1 = this;
-                    var comp2 = _hoveredComp;
+                    var comp1 = this; // New
+                    var comp2 = _hoveredComp; // Old
                     _hoveredComp = this;
+                    // If a previously hovered comp existed
                     if(comp2) {
+                        // Get common ancestor of the comps
                         var ancestor = _getCommonAncestor(comp1, comp2);
+                        // Trigger mouse leave old branch
                         while(comp2 !== ancestor) {
                             if(comp2.mouseLeft) {
                                 comp2.mouseLeft();
                             }
                             comp2 = comp2.parent;
                         }
+                        // Trigger mouse enter new branch
                         while(comp1 !== ancestor) {
                             if(comp1.mouseEntered) {
                                 comp1.mouseEntered();
                             }
                             comp1 = comp1.parent;
                         }
-                    } else {
+                    }
+                    // If no previously hovered comp
+                    else {
+                        // Trigger mouse enter new comp
+                        // and all its ancestors
                         while(comp1) {
                             if(comp1.mouseEntered) {
                                 comp1.mouseEntered();
@@ -309,41 +352,64 @@ var main = function() {
                         }
                     }
                 },
+                // Return whether this is the focused comp
                 hasFocus: function() {
                     return _focusedComp === this;
                 },
+                // Grab keyboard focus
                 focus: function() {
+                    // If focusable and not already focused
                     if(this.focusable && _focusedComp !== this) {
+                        // Unfocus previous
                         if(_focusedComp) {
                             _focusedComp.blur();
                         }
+                        // Focus this
                         _focusedComp = this;
+                        // Trigger event
                         if(this.focusGained) {
                             this.focusGained();
                         }
+                        // View has changed
                         Component.setChange();
                     }
                 },
+                // Lose keyboard focus
                 blur: function() {
+                    // If is focused
                     if(_focusedComp === this) {
+                        // Unfocus
                         _focusedComp = undefined;
+                        // Trigger event
                         if(this.focusLost) {
                             this.focusLost();
                         }
+                        // View has changed
                         Component.setChange();
                     }
                 },
+                // Show comp by setting hidden = false
+                // Won't show if an ancestor is hidden
                 show: function() {
+                    // If hidden
                     if(this.hidden) {
+                        // Unhide
                         this.hidden = false;
+                        // If comp is visible now
+                        // (false if hidden ancestor)
                         if(this.isVisible()) {
+                            // View has changed
                             Component.setChange();
                         }
                     }
                 },
+                // Hide component
                 hide: function() {
+                    // Return if already hidden
                     if(this.hidden) { return; }
+                    // Requires redraw if comp was visible
                     var willRedraw = this.isVisible();
+                    // Hide comp
                     this.hidden = true;
                     if(_focusedComp && _getCommonAncestor(this, _focusedComp) === this) {
                         _focusedComp.blur();
