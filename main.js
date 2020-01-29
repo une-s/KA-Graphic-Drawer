@@ -9,11 +9,23 @@ var show = 1;
 var main = function() {
     var init = function(pjs) {
         
+        // Track whether Ctrl/Shift/Alt are pressed
         var modifierKeys = {};
         
         var Vectors, Graphics, ButtonIcons;
     
+        // Init component classes
         var Component = (function() {
+            /*
+             * The GUI is entirely made up of components.
+             * There is one root component, which contains
+             * child components, which in turn may contain
+             * child components etc.
+             * The most generic and superclass of all
+             * components is Component. Subclasses include
+             * Button, Canvas, Slider, ...
+             */
+            
             var _pressedComps = [];
             var _focusableComps = [];
             var _focusedComp;
@@ -22,6 +34,7 @@ var main = function() {
             
             var _getCommonAncestor;
             
+            // Constructor
             var Component = function(config) {
                 config = config || {};
                 (config.parent || Component.root).addChild(this, config);
@@ -73,117 +86,161 @@ var main = function() {
                     _focusableComps.push(this);
                 }
             };
+            // Let the root comp be the prototype comp
             Component.root = Component.prototype = {
-                generation: 0,
-                x: 0,
-                y: 0,
-                globalX: 0,
-                globalY: 0,
+                generation: 0, // Starts at root = gen 0
+                x: 0, // x-position relative to parent
+                y: 0, // y-position repative to parent
+                globalX: 0, // Global x-position
+                globalY: 0, // Global y-position
                 width: pjs.width,
                 height: pjs.height,
                 graphics: pjs,
                 children: [],
-                background: 0x00ffffff,
-                foreground: 0xff000000,
-                isPressed: false,
-                focusable: false,
-                needsRedraw: true,
+                background: 0x00ffffff, // Transparent bg
+                foreground: 0xff000000, // Black fg
+                isPressed: false, // Is pressed by mouse
+                focusable: false, // Keyboard-focusable
+                needsRedraw: true, // True if call draw(g)
                 draw: function(g) {}, // Override
+                // Recursively draw all descendants
                 drawChildren: function() {
+                    // For each child of this component
                     for(var i = 0; i < this.children.length; i++) {
                         var child = this.children[i];
+                        // Ignore hidden children
                         if( child.hidden ) { continue; }
+                        // If child needs redraw
                         if( child.needsRedraw === true ||
                             typeof child.needsRedraw === 'function' &&
                             child.needsRedraw()
                         ) {
+                            // Redraw child
                             child.graphics.beginDraw();
                             child.draw(child.graphics);
                             child.graphics.endDraw();
                         }
+                        // Get image
                         var img = child.getCrop();
                         if(img) {
+                            // Draw onto the global view
                             pjs.image(img.graphics,
                                     child.globalX + img.x,
                                     child.globalY + img.y);
                         }
+                        // Recursion
                         child.drawChildren();
                     }
                 },
+                // Return a cropped image of this comp
+                // showing only what's visible on screen.
+                // Used when drawing onto the global view
                 getCrop: function() {
+                    // Corner coordinates
                     var x0 = 0, x1 = pjs.width;
                     var y0 = 0, y1 = pjs.height;
                     var comp = this;
                     do {
+                        // Make no larger than necessary
                         x0 = pjs.max(x0, comp.globalX);
                         y0 = pjs.max(y0, comp.globalY);
                         x1 = pjs.min(x1, comp.globalX + comp.width);
                         y1 = pjs.min(y1, comp.globalY + comp.height);
                     } while(comp.cropToParent && (comp = comp.parent));
+                    // Don't bother with 0 area images
                     if(x1 <= x0 || y1 <= y0) { return; }
+                    // Put image detail in one object
                     var img = {
-                        graphics: this.graphics,
-                        x: x0 - this.globalX,
-                        y: y0 - this.globalY,
+                        graphics: this.graphics, // The img
+                        x: x0 - this.globalX, // x-coord
+                        y: y0 - this.globalY, // y-coord
                         width:  x1 - x0,
                         height: y1 - y0
                     };
+                    // If crop is smaller than original img
                     if( img.x || img.width  !== this.width ||
                         img.y || img.height !== this.height )
                     {
+                        // Make cropped image
                         img.graphics = img.graphics.get(
                             img.x, img.y, img.width, img.height
                         );
                     }
+                    // Return image with pos & size detail
                     return img;
                 },
+                // Set new location of this component
                 setLocation: function(x, y) {
+                    // If new pos !== old pos
                     if(this.x !== x || this.y !== y) {
+                        // Set new pos
                         this.x = x;
                         this.y = y;
                         this.updateGlobalCoords();
+                        // Register that view has changed
                         Component.setChange();
                     }
                 },
+                // Resize this component
                 resize: function(w, h) {
+                    // If new size  !== old size
                     if(this.width !== w || this.height !== h) {
+                        // Store old size
                         var before = {
                             width: this.width,
                             height: this.height
                         };
+                        // Set new size
                         this.width = w;
                         this.height = h;
+                        // Create graphics with new size
                         this.graphics = Graphics.create(w, h);
+                        // Require redraw of this component
+                        // so the graphics can be filled in
                         if(!this.needsRedraw) {
                             this.needsRedraw = true;
                         }
+                        // If this has onResize listener
                         if(this.onResize) {
+                            // Trigger onResize event
                             this.onResize({
                                 target: this,
                                 before: before
                             });
                         }
+                        // Register that view has changed
                         Component.setChange();
                     }
                 },
+                // Make global coords up to date with local coords
                 updateGlobalCoords: function() {
+                    // Get new global coords
                     var globalX = this.parent.globalX + this.x;
                     var globalY = this.parent.globalY + this.y;
+                    // If new coords !== old coords
                     if(globalX !== this.globalX || globalY !== this.globalY) {
+                        // Set new global coords
                         this.globalX = globalX;
                         this.globalY = globalY;
+                        // Recursively update global coords of children
                         for(var i = 0; i < this.children.length; i++) {
                             this.children[i].updateGlobalCoords();
                         }
                     }
                 },
+                // Returns whether the given pt
+                // is contained within this comp
                 containsGlobalPt: function(x, y) {
                     x -= this.globalX;
                     y -= this.globalY;
                     return 0 <= x && x < this.width && 0 <= y && y < this.height;
                 },
+                // Adds a child to this component
+                // unless it already has a parent
                 addChild: function(comp, config) {
+                    // If chj,d has no parent
                     if(!comp.parent) {
+                        // Add child
                         comp.parent = this;
                         comp.generation = this.generation + 1;
                         this.children.push(comp);
