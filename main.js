@@ -28,8 +28,8 @@ var main = function() {
             
             // Private variables
             
-            // The currently pressed comp and its ancestors
-            // until no more propagation
+            // The currently pressed component and its
+            // ancestors until no more propagation
             var _pressedComps = [];
             // All keyboard focusable components
             var _focusableComps = [];
@@ -44,7 +44,9 @@ var main = function() {
             
             var _getCommonAncestor;
             
+
             // Constructor
+
             var Component = function(config) {
                 // Make sure config object is not null
                 config = config || {};
@@ -117,6 +119,8 @@ var main = function() {
                     _focusableComps.push(this);
                 }
             };
+            // End of constructor
+            
             // Let the root comp be the prototype comp
             Component.root = Component.prototype = {
                 generation: 0, // Starts at root = gen 0
@@ -163,7 +167,7 @@ var main = function() {
                         child.drawChildren();
                     }
                 },
-                // Return a cropped image of this comp
+                // Return a cropped image of this component
                 // showing only what's visible on screen.
                 // Used when drawing onto the global view
                 getCrop: function() {
@@ -259,8 +263,8 @@ var main = function() {
                         }
                     }
                 },
-                // Returns whether the given pt
-                // is contained within this comp
+                // Returns whether the given pt is
+                // contained within this component
                 containsGlobalPt: function(x, y) {
                     x -= this.globalX;
                     y -= this.globalY;
@@ -340,10 +344,10 @@ var main = function() {
                             comp1 = comp1.parent;
                         }
                     }
-                    // If no previously hovered comp
+                    // If no previously hovered component
                     else {
-                        // Trigger mouse enter new comp
-                        // and all its ancestors
+                        // Trigger mouse enter new
+                        // component and all its ancestors
                         while(comp1) {
                             if(comp1.mouseEntered) {
                                 comp1.mouseEntered();
@@ -407,94 +411,146 @@ var main = function() {
                 hide: function() {
                     // Return if already hidden
                     if(this.hidden) { return; }
-                    // Requires redraw if comp was visible
+                    // Store whether redraw required
                     var willRedraw = this.isVisible();
                     // Hide comp
                     this.hidden = true;
+                    // Unfocus any components inside this
                     if(_focusedComp && _getCommonAncestor(this, _focusedComp) === this) {
                         _focusedComp.blur();
                     }
+                    // If redraw required
                     if(willRedraw) {
                         Component.setChange();
                     }
                 },
+                // Whether this component is visible
+                // True if not hidden and does not
+                // have a hidden ancestor
                 isVisible: function() {
+                    // For this and all ancestors
                     var comp = this;
                     while(comp) {
+                        // Return false if hidden exists
                         if(comp.hidden) {
                             return false;
                         }
                         comp = comp.parent;
                     }
+                    // Otherwise return true
                     return true;
                 }
             };
+            // End of root component / prototype component
+
+            // Public static methods
+
+            // Draws all components
             Component.drawAll = function() {
+                // Pending changes false
                 _changes[0] = false;
+                // Clear graphics
                 pjs.background(255, 255, 255);
+                // Draw component tree
                 if(!Component.root.hidden) {
                     Component.root.draw(pjs);
                     Component.root.drawChildren();
                 }
             };
+            // Register that the view has changed.
+            // The view will be redrawn in the next frame
             Component.setChange = function() {
+                // Set changes to true
                 _changes[0] = true;
             };
+            // For more advanced change tracking, pass a
+            // callback function to this function. If it
+            // returns true, the view will be redrawn next
             Component.trackChange = function(func) {
                 _changes.push(func);
             };
+            // Whether view has changed since last draw
             Component.hasChanges = function() {
+                // The _changes array starts with a bool
+                // and all subsequent elems are callbacks
+
+                // If simple change has occurred
                 if(_changes[0]) {
                     return true;
                 }
+                // Otherwise go through callback functions
                 for(var i = 1; i < _changes.length; i++) {
+                    // Return true if change occurred
                     if(_changes[i]()) {
                         return true;
                     }
                 }
+                // Otherwise return false
                 return false;
             };
+            // Returns the component at the given coords
             Component.getComponentAt = function(x, y) {
+                // Get root
                 var root = Component.root;
+                // If point not in root, return
                 if(!root.containsGlobalPt(x, y) || root.hidden) {
                     return;
                 }
+                // Get and return component at point
                 var comp = root.getDescendantAt(x, y);
                 return comp || root;
             };
+            // Invokes mouseDragged on pressed components
             Component.dragPressed = function() {
+                // Get mouse pos
                 var x = pjs.mouseX;
                 var y = pjs.mouseY;
+                // Whether to propagate event to parent
                 var propagate;
+                // For pressed component and its ancestors
                 for(var i = 0; i < _pressedComps.length; i++) {
                     var comp = _pressedComps[i];
+                    // If has mouseDragged listener
                     if(comp.mouseDragged && propagate !== false) {
+                        // Invoke event on listener
                         propagate = comp.mouseDragged({
                             x: x - comp.globalX,
                             y: y - comp.globalY
                         });
+                        // Until propagate is false
                     }
                 }
             };
+            // Unpresses all pressed components
             Component.unpressAll = function() {
+                // Get mouse pos
                 var x = pjs.mouseX;
                 var y = pjs.mouseY;
+                // Whether to propagate event to parent
                 var propagate;
+                // For pressed component and its ancestors
                 for(var i = 0; i < _pressedComps.length; i++) {
                     var comp = _pressedComps[i];
+                    // Unpress component
                     comp.isPressed = false;
+                    // If has mouseReleased listener
                     if(comp.mouseReleased && propagate !== false) {
+                        // Invoke event on listener
                         propagate = comp.mouseReleased({
                             x: x - comp.globalX,
                             y: y - comp.globalY
                         });
+                        // Until propagate is false
                     }
                 }
+                // Clear storage
                 _pressedComps = [];
             };
+            // Returns the focused component
             Component.getFocusedComponent = function() {
                 return _focusedComp;
             };
+            // Shifts focus to previous focusable component
             Component.focusPrevious = function() {
                 if(_focusedComp) {
                     var count =  _focusableComps.length;
@@ -503,6 +559,7 @@ var main = function() {
                     return _focusedComp;
                 }
             };
+            // Shifts focus to the next focusable component
             Component.focusNext = function() {
                 if(_focusedComp) {
                     var i = (_focusedComp.tabIndex + 1) % _focusableComps.length;
@@ -510,12 +567,15 @@ var main = function() {
                     return _focusedComp;
                 }
             };
+            // Clears focus
             Component.clearFocus = function() {
                 if(_focusedComp) {
                     _focusedComp.blur();
                 }
             };
             
+            // Private functions
+
             _getCommonAncestor = function(comp1, comp2) {
                 while(comp1.generation > comp2.generation) {
                     comp1 = comp1.parent;
