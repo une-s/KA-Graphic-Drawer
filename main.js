@@ -561,10 +561,13 @@ var main = function() {
                 var count =  _focusableComps.length;
                 if(count === 0) { return; }
                 var from = _focusedComp ? _focusedComp.tabIndex : 0;
-                for(var i = from - 1; i !== from; i--) {
-                    i += i < 0 ? count : 0;
+                var i = (from + count - 1) % count;
+                while(true) {
                     if(_focusableComps[i].focus())
                         { return _focusedComp; }
+                    if(i === from)
+                        { return; }
+                    i = (i + count - 1) % count;
                 }
             };
             // Shifts focus to the next focusable component
@@ -572,10 +575,13 @@ var main = function() {
                 var count =  _focusableComps.length;
                 if(count === 0) { return; }
                 var from = _focusedComp ? _focusedComp.tabIndex : count-1;
-                for(var i = from + 1; i !== from; i++) {
-                    i -= i >= count ? count : 0;
+                var i = (from + 1) % count;
+                while(true) {
                     if(_focusableComps[i].focus())
                         { return _focusedComp; }
+                    if(i === from)
+                        { return; }
+                    i = (i + 1) % count;
                 }
             };
             // Clears focus
