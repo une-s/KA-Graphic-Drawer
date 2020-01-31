@@ -559,28 +559,44 @@ var main = function() {
             // Shifts focus to previous focusable component
             Component.focusPrevious = function() {
                 var count =  _focusableComps.length;
+                // Leave if no focusable component exists
                 if(count === 0) { return; }
+                // Tab index of last focused comp, or zero
                 var from = _focusedComp ? _focusedComp.tabIndex : 0;
+                // Iterate through all focusable components
                 var i = (from + count - 1) % count;
                 while(true) {
+                    // If successfully gains keyboard focus
                     if(_focusableComps[i].focus())
+                        // Return component
                         { return _focusedComp; }
+                    // If all have been iterated through
                     if(i === from)
+                        // Return nothing
                         { return; }
+                    // Decrement index in a cycle
                     i = (i + count - 1) % count;
                 }
             };
             // Shifts focus to the next focusable component
             Component.focusNext = function() {
                 var count =  _focusableComps.length;
+                // Leave if no focusable component exists
                 if(count === 0) { return; }
+                // Index of last focused comp, or count-1
                 var from = _focusedComp ? _focusedComp.tabIndex : count-1;
+                // Iterate through all focusable components
                 var i = (from + 1) % count;
                 while(true) {
+                    // If successfully gains keyboard focus
                     if(_focusableComps[i].focus())
+                        // Return component
                         { return _focusedComp; }
+                    // If all have been iterated through
                     if(i === from)
+                        // Return nothing
                         { return; }
+                    // Increment index in a cycle
                     i = (i + 1) % count;
                 }
             };
@@ -593,19 +609,26 @@ var main = function() {
             
             // Private functions
 
+            // Gets deepest common ancestor of 2 components
             _getCommonAncestor = function(comp1, comp2) {
+                // Make the generations the same
+                // by selecting parents of one or the other
                 while(comp1.generation > comp2.generation) {
                     comp1 = comp1.parent;
                 }
                 while(comp2.generation > comp1.generation) {
                     comp2 = comp2.parent;
                 }
+                // Go up the tree until both are the same
                 while(comp1 !== comp2) {
                     comp1 = comp1.parent;
                     comp2 = comp2.parent;
                 }
+                // Return deepest common ancestor
                 return comp1;
             };
+
+            // Return fully initialized Component class
             return Component;
         })();
         var Panel = (function() {
