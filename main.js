@@ -1040,11 +1040,6 @@ var main = function() {
                             this.text = text.substring(0,text.length-1);
                             break;
                         case pjs.TAB:
-                            if(modifierKeys[pjs.SHIFT]) {
-                                Component.focusPrevious();
-                            } else {
-                                Component.focusNext();
-                            }
                             return;
                         case pjs.ESC:
                             Component.clearFocus();
@@ -2647,8 +2642,18 @@ var main = function() {
                 pjs.keyCode === pjs.SHIFT )
                 { modifierKeys[pjs.keyCode] = true; }
             var comp = Component.getFocusedComponent();
+            var propagate = true;
             if(comp && comp.keyPressed)
-                { comp.keyPressed(); }
+                { propagate = comp.keyPressed(); }
+            if(propagate !== false) {
+                if(pjs.keyCode === pjs.TAB) {
+                    if(modifierKeys[pjs.SHIFT]) {
+                        Component.focusPrevious();
+                    } else {
+                        Component.focusNext();
+                    }
+                }
+            }
         };
         pjs.keyTyped = function() {
             var comp = Component.getFocusedComponent();
