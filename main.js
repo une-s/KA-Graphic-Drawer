@@ -356,14 +356,16 @@ var main = function() {
                         }
                     }
                 },
-                // Return whether this is the focused comp
+                // Returns whether this is the focused comp
                 hasFocus: function() {
                     return _focusedComp === this;
                 },
-                // Grab keyboard focus
+                // Grabs focus if focusable & visible
+                // Returns whether focus changed
                 focus: function() {
-                    // If focusable and not already focused
-                    if(this.focusable && _focusedComp !== this) {
+                    // If can focus and not already focused
+                    if(this.focusable && _focusedComp !== this &&
+                            this.isVisible() ) {
                         // Unfocus previous
                         if(_focusedComp) {
                             _focusedComp.blur();
@@ -376,7 +378,11 @@ var main = function() {
                         }
                         // View has changed
                         Component.setChange();
+                        // Focus changed
+                        return true;
                     }
+                    // Focus didn't change
+                    return false;
                 },
                 // Lose keyboard focus
                 blur: function() {
@@ -552,19 +558,24 @@ var main = function() {
             };
             // Shifts focus to previous focusable component
             Component.focusPrevious = function() {
-                if(_focusedComp) {
-                    var count =  _focusableComps.length;
-                    var i = (_focusedComp.tabIndex + count - 1) % count;
-                    _focusableComps[i].focus();
-                    return _focusedComp;
+                var count =  _focusableComps.length;
+                if(count === 0) { return; }
+                var from = _focusedComp ? _focusedComp.tabIndex : 0;
+                for(var i = from - 1; i !== from; i--) {
+                    i += i < 0 ? count : 0;
+                    if(_focusableComps[i].focus())
+                        { return _focusedComp; }
                 }
             };
             // Shifts focus to the next focusable component
             Component.focusNext = function() {
-                if(_focusedComp) {
-                    var i = (_focusedComp.tabIndex + 1) % _focusableComps.length;
-                    _focusableComps[i].focus();
-                    return _focusedComp;
+                var count =  _focusableComps.length;
+                if(count === 0) { return; }
+                var from = _focusedComp ? _focusedComp.tabIndex : count-1;
+                for(var i = from + 1; i !== from; i++) {
+                    i -= i >= count ? count : 0;
+                    if(_focusableComps[i].focus())
+                        { return _focusedComp; }
                 }
             };
             // Clears focus
