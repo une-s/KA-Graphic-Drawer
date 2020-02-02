@@ -785,7 +785,6 @@ var main = function() {
                 // Set background color when active
                 if(config.backgroundActive)
                     { this.backgroundActive = config.backgroundActive; }
-                if(config.onActivationToggle) { this.onClick = config.onClick; }
             };
             Button.TOGGLE     = 'toggle';
             Button.ACTIVATE   = 'activate';
