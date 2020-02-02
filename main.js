@@ -630,6 +630,8 @@ var main = function() {
                 return comp1;
             };
 
+            // Component init complete
+
             // Return fully initialized Component class
             return Component;
         })();
@@ -708,6 +710,8 @@ var main = function() {
                 g.popStyle();
             };
 
+            // Panel init complete.
+
             // Return fully initialized Panel class
             return Panel;
         })();
@@ -723,7 +727,7 @@ var main = function() {
 
             // Private variables
             // Constants
-            var _MARGIN = 3;
+            var _MARGIN = 3; // Margin inside button
             var _DEFAULT_SIZE = 34; // Btn width/height
             // Private function variables
             var _redrawIcon;
@@ -867,73 +871,118 @@ var main = function() {
                     // If click behavior says deactivate
                     // on mouse release
                     if(this.clickBehavior === Button.DEACTIVATE) {
-                        // Deactivate
+                        // Deactivate.
                         // onToggle is called here
                         this.setActive(false);
                     }
                 },
+                // Changes state of the button to active
+                // or inactive. The onToggle function is
+                // called by this function.
                 setActive: function(active) {
+                    // If old state !== new state
                     if(this.isActive !== (active = !!active)) {
+                        // Change state
                         this.isActive = active;
+                        // Call onToggle.
+                        // Button action happens here.
                         if(this.onToggle) {
                             this.onToggle(active);
                         }
+                        // If btn belongs in a group, I.e.
+                        // only one can be active at once
                         if(active && this.buttonGroup) {
+                            // Go through all btns in group
                             for(var i = 0; i < this.buttonGroup.length; i++) {
                                 var btn = this.buttonGroup[i];
+                                // For all btns except this
                                 if(btn !== this) {
+                                    // Set as inactive
                                     btn.setActive(false);
                                 }
                             }
                         }
+                        // View has changed
                         Component.setChange();
                     }
                 },
+                // Enables or disables button
                 setEnabled: function(enabled) {
+                    // If old state !== new state
                     if(this.isEnabled !== (enabled = !!enabled)) {
+                        // Set new state
                         this.isEnabled = enabled;
+                        // If disabled
                         if(!enabled) {
+                            // Turn off hover state
                             this.isHovered = false;
+                            // Make inactive
                             this.setActive(false);
                         }
+                        // View has changed
                         Component.setChange();
                     }
                 },
+                // Draws the button
                 draw: function(g) {
+                    // Set relevant background color
                     g.fill(this.isActive  ? this.backgroundActive :
                           (this.isHovered ? this.backgroundHover  :
                                             this.background));
+                    // Draw background
                     g.rect(0, 0, g.width-1, g.height-1, 3);
-                    
+                    // If icon needs redraw
                     if( this.iconNeedsRedraw === true ||
                         typeof this.iconNeedsRedraw === 'function' &&
                         this.iconNeedsRedraw()
                     ) {
+                        // Redraw icon
                         _redrawIcon(this);
                     }
+                    // Get icon
                     var icon = (this.isActive && this.iconActive) || this.icon;
+                    // Draw icon onto button
                     Graphics.image(g, icon,
                             _MARGIN, _MARGIN,
                             g.width - 2*_MARGIN, g.height - 2*_MARGIN,
                             this.isEnabled ? 255 : 60);
                 }
             });
+            // End of Button.prototype
+
+            // Static functions
+
+            // Creates a btn icon by taking a draw function
             Button.createIcon = function(drawFunc, btnW, btnH) {
+                // Get width and height
                 btnW = btnW || _DEFAULT_SIZE;
                 btnH = btnH || _DEFAULT_SIZE;
+                // Create graphics
                 var g = Graphics.create(btnW - 2*_MARGIN, btnH - 2*_MARGIN);
+                // Draw icon onto graphics
                 g.beginDraw();
                 drawFunc(g);
                 g.endDraw();
+                // Return completed graphics
                 return g;
             };
+
+            // Private functions
+
+            // Redraws the icon of a given button
             _redrawIcon = function(btn) {
+                // Return if nothing to redraw
                 if(!btn.drawIcon) { return; }
+                // Set new icon
                 btn.icon = Button.createIcon(
                         btn.drawIcon.bind(btn),
                         btn.width,
                         btn.height);
             };
+            
+            // Button init complete
+
+            // Return fully initialized Button class
             return Button;
         })();
         var ColorPicker = (function() {
