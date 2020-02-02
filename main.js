@@ -714,7 +714,12 @@ var main = function() {
         // Button - A regular button
         var Button = (function() {
 
-            // A button is a component too
+            /*
+             * A button is a type of component.
+             * To make a button interactive, pass an
+             * onToggle callback function to the Button's
+             * constructor.
+             */
 
             // Private variables
             // Constants
@@ -786,10 +791,23 @@ var main = function() {
                 if(config.backgroundActive)
                     { this.backgroundActive = config.backgroundActive; }
             };
+            // End of Button constructor
+
+            // Button click behaviors:
+
+            // Toggles between active and inactive when
+            // pressed.
             Button.TOGGLE     = 'toggle';
+            // Activates when pressed.
+            // Stays actve if pressed more than once.
             Button.ACTIVATE   = 'activate';
+            // Active only while mouse is down.
+            // Deactivates on release.
             Button.DEACTIVATE = 'deactivate';
+
+            // Have Button prototype extend Component
             Button.prototype = Object.assign(Object.create(Component.prototype), {
+                // Defaults
                 isEnabled: true,
                 isActive: false,
                 clickBehavior: Button.DEACTIVATE,
@@ -798,36 +816,59 @@ var main = function() {
                 backgroundActive: pjs.color(38, 60, 92),
                 foreground:       pjs.color(11, 41, 61),
                 foregroundActive: pjs.color(178, 226, 240),
+                // On mouse enter
                 mouseEntered: function() {
+                    // Do nothing if disabled
                     if(!this.isEnabled)
                         { return; }
+                    // Put button in hover state
                     this.isHovered = true;
+                    // If button is clickale
                     if(this.clickBehavior !== Button.ACTIVATE || !this.isActive) {
+                        // Chabge cursor to pointing hand
                         pjs.cursor(pjs.HAND);
+                        // If button may look different now
                         if(!this.isActive) {
+                            // View has changed
                             Component.setChange();
                         }
                     }
                 },
+                // On mouse leave
                 mouseLeft: function() {
+                    // Unhover
                     this.isHovered = false;
+                    // Change cursor back to default
                     pjs.cursor(pjs.ARROW);
+                    // If button may look different now
                     if(this.isEnabled && !this.isActive) {
+                        // View has changed
                         Component.setChange();
                     }
                 },
+                // On mouse pressed
                 mousePressed: function() {
+                    // Do nothing if disabled
                     if(!this.isEnabled)
                         { return false; }
+                    // Activate/deactivate button.
+                    // onToggle is called here.
                     this.setActive( this.clickBehavior !== Button.TOGGLE ||
                                    !this.isActive);
+                    // Set correct cursor type
                     if(this.clickBehavior === Button.ACTIVATE && this.isActive) {
                         pjs.cursor(pjs.ARROW);
                     }
+                    // Don't propagate event to parent
                     return false;
                 },
+                // On mouse released
                 mouseReleased: function() {
+                    // If click behavior says deactivate
+                    // on mouse release
                     if(this.clickBehavior === Button.DEACTIVATE) {
+                        // Deactivate
+                        // onToggle is called here
                         this.setActive(false);
                     }
                 },
