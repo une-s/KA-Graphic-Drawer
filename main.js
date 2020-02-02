@@ -15,6 +15,8 @@ var main = function() {
         var Vectors, Graphics, ButtonIcons;
     
         // Init component classes
+        
+        // Component - Generic superclass
         var Component = (function() {
             /*
              * The GUI is entirely made up of components.
@@ -48,7 +50,7 @@ var main = function() {
             // Constructor
 
             var Component = function(config) {
-                // Make sure config object is not null
+                // Make sure config isn't null or undefined
                 config = config || {};
 
                 // Initialize comp based on config values
@@ -631,80 +633,156 @@ var main = function() {
             // Return fully initialized Component class
             return Component;
         })();
+        // Panel - Empty colored container
         var Panel = (function() {
+
+            /*
+             * Panel is a colored rectangular container
+             * with a thin border around the edges. The
+             * toolbar and the container for the brush
+             * stroke settings are examples of panels.
+             * Other components can be placed inside a
+             * panel for a nice layout.
+             */
+
+            // Init private vabiables
             var _drawBorder;
             
+            // Constructor
             var Panel = function(config) {
+                // Make sure config isn't null or undefined
                 config = config || {};
+                // Let Panel constructor extend Component
                 Component.call(this, Object.assign({
+                    // Set default background color if
+                    // config has no background color set
                     background: pjs.color(81, 95, 99)
                 }, config));
             };
+            // Let Panel prototype extend Component
             Panel.prototype = Object.assign(Object.create(Component.prototype), {
+                // Override draw function
                 draw: function(g) {
+                    // Draw background
                     g.background(this.background);
+                    // Draw border
                     _drawBorder(g,2,pjs.color(143, 143, 143),pjs.color(1, 15, 54));
+                    // No need to redraw
                     this.needsRedraw = false;
                 }
             });
+            // End of Panel.prototype
+
+            // Draws the border around the edges
             _drawBorder = function(g, thickness, cT, cB, cL, cR) {
+                // cT - Color top (required)
+
+                // Color bottom (default to cT if absent)
                 cB = cB === undefined ? cT : cB;
+                // Color left (default to cT if absent)
                 cL = cL === undefined ? cT : cL;
+                // Color right (default to cB if absent)
                 cR = cR === undefined ? cB : cR;
+
+                // Utility vars
                 var w = g.width;
                 var h = g.height;
+
+                // Store current stroke/fill style
                 g.pushStyle();
+
                 g.noStroke();
+                // Draw top
                 g.fill(cT);
                 g.quad(0,0,thickness,thickness,w-thickness,thickness,w,0);
+                // Draw bottom
                 g.fill(cB);
                 g.quad(w,h,w-thickness,h-thickness,thickness,h-thickness,0,h);
+                // Draw left
                 g.fill(cL);
                 g.quad(0,h,thickness,h-thickness,thickness,thickness,0,0);
+                // Draw right
                 g.fill(cR);
                 g.quad(w,0,w-thickness,thickness,w-thickness,h-thickness,w,h);
+                // Revert back to stored stroke/fill style
                 g.popStyle();
             };
+
+            // Return fully initialized Panel class
             return Panel;
         })();
+        // Button - A regular button
         var Button = (function() {
+
+            // A button is a component too
+
+            // Private variables
+            // Constants
             var _MARGIN = 3;
-            var _DEFAULT_SIZE = 34;
+            var _DEFAULT_SIZE = 34; // Btn width/height
+            // Private function variables
             var _redrawIcon;
+
+            // The constructor
             var Button = function(config) {
+                // Make sure config isn't null or undefined
                 config = config || {};
+                // Have Button constructor extend Component
                 Component.call(this, Object.assign({
+                    // Set default width & height if not
+                    // set by config
                     width: _DEFAULT_SIZE,
                     height: _DEFAULT_SIZE
                 },config));
+                // If button belongs in a group, that is,
+                // only one button in the group can be
+                // selected at the same time
                 if(config.buttonGroup) {
                     this.buttonGroup = config.buttonGroup;
                     this.buttonGroup.push(this);
                 }
+                // Set click behavior. Possible values:
+                // - Button.TOGGLE
+                // - Button.ACTIVATE
+                // - Button.DEACTIVATE
+                // See below constructor for meaning
                 if(config.clickBehavior)
                     { this.clickBehavior = config.clickBehavior; }
+                // What happens on toggle/click
                 if(config.onToggle) { this.onToggle = config.onToggle; }
+                // Whether btn is active/pressed/selected
                 if(config.isActive) { this.setActive(true); }
+                // Whether button is enabled/clickable
                 if(config.isEnabled === false) { this.setEnabled(false); }
+                // Set drawIcon function if exists
                 if(config.drawIcon) {
                     this.drawIcon = config.drawIcon;
                     _redrawIcon(this);
                     if(config.iconNeedsRedraw)
                         { this.iconNeedsRedraw = config.iconNeedsRedraw; }
-                } else if(config.icon) {
+                }
+                // Otherwise, set icon if exists
+                else if(config.icon) {
+                    // Set icon
                     this.icon = config.icon.__isPImage ?
                             ButtonIcons.fromImage(config.icon) :
                             config.icon;
+                    // If a separate icon exists for when
+                    // the button is active, add that too
                     if(config.iconActive) {
                         this.iconActive = config.iconActive.__isPImage ?
                                 ButtonIcons.fromImage(config.iconActive) :
                                 config.iconActive;
                     }
-                } else {
+                }
+                // Otherwise, fallback to Winston icon
+                else {
                     this.icon = ButtonIcons.winston;
                 }
+                // Set background color on hover
                 if(config.backgroundHover)
                     { this.backgroundHover = config.backgroundHover; }
+                // Set background color when active
                 if(config.backgroundActive)
                     { this.backgroundActive = config.backgroundActive; }
                 if(config.onActivationToggle) { this.onClick = config.onClick; }
