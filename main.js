@@ -991,9 +991,13 @@ var main = function() {
             /*
              * The color picker consists of a color wheel
              * with a triangle inside, in all consisting of
-             * every possible color (RGB/HSB). Transparent
-             * colors are not part of the color picker.
-             * That is a separate setting.
+             * every possible color. Pressing the
+             * surrounding circle will select the hue,
+             * while pressing the triangle inside will
+             * select the saturation and brightness.
+             * Transparent colors are not part of the color
+             * picker, (though transparency is available
+             * separately).
              */
 
             // Constants
@@ -1241,6 +1245,9 @@ var main = function() {
 
             // Private functions
 
+            // Returns coords of the triangle's 3 vertices
+            // r = distance from center to each vertex
+            // angle = how much the triangle is rotated by
             _getTrianglePts = function(r, angle) {
                 var cosA = pjs.cos(angle);
                 var sinA = pjs.sin(angle);
@@ -1251,51 +1258,91 @@ var main = function() {
                     {x: r*(-0.5*cosA + sqrtP75*sinA), y: r*(0.5*sinA + sqrtP75*cosA)}
                 ];
             };
+            // Returns the saturation and brightness at the
+            // given coords (x,y) inside the given triangle
+            // (pts). For coords outside the triangle,
+            // returns nothing if adjust is false (default)
+            // or picks the closest point inside the
+            // triangle if adjust is true.
             _getSBAt = function(x, y, pts, adjust) {
+                // To divide by
                 var div = 1.5*(pts[0].x*pts[0].x + pts[0].y*pts[0].y);
+                // Saturation times brightness (range 0-1)
                 var satTimesBri = (
                     (x + 0.5*pts[0].x) * pts[0].x +
                     (y + 0.5*pts[0].y) * pts[0].y
                 ) / div;
+                // Brightness (in range 0-1)
                 var bri = -(
                     (x -= pts[2].x) * pts[2].x +
                     (y -= pts[2].y) * pts[2].y
                 ) / div;
+                // If coords are outside one of the edges
                 if(satTimesBri < 0) {
+                    // Move inside if adjust is true
                     if(adjust) {
                         bri = pjs.constrain(bri - 0.5 * satTimesBri, 0, 1);
                         satTimesBri = 0;
-                    } else { return; }
-                } else if(bri > 1) {
+                    }
+                    // Otherwise return nothing
+                    else { return; }
+                }
+                // Or, if coords are outside another edge
+                else if(bri > 1) {
+                    // Move inside if adjust is true
                     if(adjust) {
                         satTimesBri -= 0.5 * (bri - 1);
                         bri = 1;
                         satTimesBri = pjs.constrain(satTimesBri, 0, 1);
-                    } else { return; }
-                } else if(satTimesBri > bri) {
+                    }
+                    // Otherwise return nothing
+                    else { return; }
+                }
+                // Or, if coords are outside the last edge
+                else if(satTimesBri > bri) {
+                    // Move inside if adjust is true
                     if(adjust) {
                         var diff = 0.5 * (satTimesBri - bri);
                         satTimesBri = pjs.constrain(satTimesBri - diff, 0, 1);
                         bri = pjs.constrain(bri + diff, 0, 1);
-                    } else { return; }
+                    }
+                    // Otherwise return nothing
+                    else { return; }
                 }
+                // Find the saturation (range 0-1)
                 var sat = satTimesBri / bri || 0;
+                // Return sat and bri (range 0-255)
                 return [255*sat, 255*bri];
             };
+            // Sets the hue of the color picker based on
+            // selected coordinates
             _setHuePoint = function(clrPicker, x, y) {
+                // Calculate angle (range 0-360)
                 var angle = (pjs.atan2(-y, x) + 360) % 360;
+                // Calculate hue (range 0-255)
                 var hue = 17/24 * angle;
+                // Set new hue
                 clrPicker.setHSB(hue, clrPicker.hsb[1], clrPicker.hsb[2]);
             };
+            // Sets the saturation and brightness of the
+            // color picker based on selected coordinates
             _setSBPoint = function(clrPicker, x, y) {
+                // Half the color picker size
                 var halfSz = clrPicker.size/2 | 0;
+                // Get the triangle vertex coords
                 var trianglePts = _getTrianglePts(_R_TRIANGLE*halfSz, clrPicker.angle);
+                // Get the saturation and brightness
                 var sb = _getSBAt(x, y, trianglePts, true);
+                // Set new saturation and brightness
                 clrPicker.setHSB(clrPicker.hsb[0], sb[0], sb[1]);
             };
+            // Gets the coordinates for the currently
+            // selected color inside the triangle
             _getSBPoint = function(clrPicker, trianglePts) {
+                // Get current sat and bri (range 0-1)
                 var sat = clrPicker.hsb[1] / 255;
                 var bri = clrPicker.hsb[2] / 255;
+                // Calculate and return coordinates
                 return {
                     x:  sat * bri * trianglePts[0].x +
                         (1-sat)*bri*trianglePts[1].x +
@@ -1305,9 +1352,15 @@ var main = function() {
                         (1 - bri) * trianglePts[2].y
                 };
             };
+
+            // ColorPicker init complete
+
+            // Return fully initialized ColorPicker class
             return ColorPicker;
         })();
+        // Input - Field for entering text or numbers
         var Input = (function() {
+
             var _BLINK_DURATION = 1600;
             var _lastBlink = 0;
             var _blinkStep = 0; // 0 to show bar, 1 to not show bar
