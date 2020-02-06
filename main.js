@@ -985,145 +985,262 @@ var main = function() {
             // Return fully initialized Button class
             return Button;
         })();
+        // ColorPicker - Visual color picker
         var ColorPicker = (function() {
-            var _R_OUTER = 0.95;
-            var _R_INNER = 0.8;
-            var _R_TRIANGLE = 0.75;
-            var _HUE_SECTION = 0;
-            var _SB_SECTION = 1;
+
+            /*
+             * The color picker consists of a color wheel
+             * with a triangle inside, in all consisting of
+             * every possible color (RGB/HSB). Transparent
+             * colors are not part of the color picker.
+             * That is a separate setting.
+             */
+
+            // Constants
+            // Distance from center to...
+            var _R_OUTER = 0.95; // ...outer end of circle
+            var _R_INNER = 0.8; // ...inner end of circle
+            var _R_TRIANGLE = 0.75; // ...triangle vertices
+            // Identifier for...
+            var _HUE_SECTION = 0; // ...circle section
+            var _SB_SECTION = 1; // ...triangle section
             
+            // Private functions
             var _getTrianglePts, _getSBAt, _setHuePoint, _setSBPoint, _getSBPoint;
+
+            // Constructor
             var ColorPicker = function(config) {
+                // Make sure config isn't null or undefined
                 config = config || {};
+                // Accept size instead of width/height
+                // because the component is always square
                 delete config.width;
                 delete config.height;
                 if(config.size) { this.size = config.size; }
+                // Have ColorPicker extend Component
                 Component.call(this, Object.assign({
+                    // Let width === height
                     width:  this.size,
                     height: this.size,
                 }, config));
+                // Add color change listener
                 if(config.onColorChange) {
                     this.onColorChange = config.onColorChange;
                 }
+                // Set starting color
                 this.setColor(config.color || 0xff000000);
             };
+            // End of constructor
+
+            // Have ColorPicker prototype extend Component
             ColorPicker.prototype = Object.assign(Object.create(Component.prototype), {
+                // Default size
                 size: 140,
+                // Sets the color
                 setColor: function(clr) {
+                    // Find and set the HSB color values.
                     this.setHSB(pjs.hue(clr), pjs.saturation(clr), pjs.brightness(clr),clr);
                 },
+                // Sets the HSB color values individually.
+                // If the precise RGB value is known,
+                // it can be passed as a 4th parameter.
+                // Otherwise it'll be calculated from HSB.
                 setHSB: function(hue, sat, bri, clr) {
+                    // Remove any transparency
                     if(clr !== undefined) { clr |= 0xff000000; }
+
+                    // Get graphics object for access to
+                    // HSB-based color function
                     var g = this.graphics;
                     g.colorMode(pjs.HSB);
+                    // Get previous HSB color values
                     var hsb = this.hsb;
+                    // If new color differs from old color
                     if(
                         !hsb || hue !== hsb[0] || sat !== hsb[1] || bri !== hsb[2] ||
                         (clr && clr !== this.color)
                     ) {
+                        // Store new HSB values
                         this.hsb = [hue, sat, bri];
+                        // Store new exact color
                         this.color = clr || g.color(hue, sat, bri);
+                        // Store new angle
                         this.angle = 24/17 * hue;
+                        // Trigger color change event
+                        // on listener
                         if(this.onColorChange) {
                             this.onColorChange();
                         }
+                        // View has changes
                         Component.setChange();
                     }
                 },
+                // Draws the color wheel
                 draw: function(g) {
+                    // Calculate constants
+                    
+                    // Half of component size
                     var halfSz = this.size/2 | 0;
+                    // Radius of outer end of circle
                     var rOut = _R_OUTER * halfSz;
+                    // Radius of inner end of circle
                     var rIn  = _R_INNER * halfSz;
+                    // Squared values for convenience
                     var rOutSq = rOut * rOut;
                     var rInSq  = rIn  * rIn;
+                    // Array of triangle vertex coords
                     var trianglePts = _getTrianglePts(_R_TRIANGLE*halfSz, this.angle);
+                    // Use HSB
                     g.colorMode(pjs.HSB);
                     g.background(0, 0, 0, 0);
+                    // Ready for pixel manipulation
                     g.loadPixels();
                     var data = g.imageData.data;
+                    // Go through all pixels
+                    // (x,y) = current pixel coords
+                    // i = idx of curr pixel in data array
                     for(var y = -halfSz, i = 0; y < halfSz; y++, i += (this.size&1) << 2) {
                         for(var x = -halfSz; x < halfSz; x++, i += 4) {
+                            // Get polar coords of pixel
+                            // var sb - for later use
                             var distSq = x*x + y*y, sb;
                             var angle = (pjs.atan2(-y, x) + 360) % 360;
+                            // If current pixel is in the
+                            // circle section (hue section)
                             if(rInSq < distSq && distSq < rOutSq) {
+                                // Get color
                                 var clr = g.color(17/24 * angle, 255, 255);
+                                // Set pixel color vals
                                 data[i    ] = pjs.red(clr);
                                 data[i + 1] = pjs.green(clr);
                                 data[i + 2] = pjs.blue(clr);
-                                data[i + 3] = 255;
+                                data[i + 3] = 255; // Alpha
                             }
+                            // Otherwise, if current pixel
+                            // is in the triangle section:
+                            // Get SB vals (HSB with no H)
                             else if( (sb = _getSBAt(x, y, trianglePts)) ) {
+                                // Get color from HSB
                                 var clr = g.color(this.hsb[0], sb[0], sb[1]);
+                                // Set pixel color vals
                                 data[i    ] = pjs.red(clr);
                                 data[i + 1] = pjs.green(clr);
                                 data[i + 2] = pjs.blue(clr);
-                                data[i + 3] = 255;
+                                data[i + 3] = 255; // Alpha
                             }
                         }
                     }
+                    // Pixel manipulation complete - update
                     g.updatePixels();
                     
+                    // Store current transform
                     g.pushMatrix();
+                    // Center coordinates
                     g.translate(halfSz, halfSz);
                     
+                    // Draw with black
                     g.noFill();
                     g.stroke(0);
+
+                    // Mark selected pt in triangle section
                     g.strokeWeight(0.02*halfSz);
                     var pt = _getSBPoint(this, trianglePts);
                     g.ellipse(pt.x, pt.y, 0.1*halfSz, 0.1*halfSz);
                     
+                    // Rotate coordinates
                     g.rotate(-pjs.radians(this.angle));
                     
+                    // Mark selected pt in circle section
                     var strokeWt = 0.04*halfSz;
                     g.strokeWeight(strokeWt);
-                    var ht = 0.12*halfSz;
+                    var ht = 0.12*halfSz; // rect height
                     g.rect(rIn - 0.5*strokeWt,-0.5*ht,rOut - rIn + strokeWt,ht);
+
+                    // Revert to stored transform
                     g.popMatrix();
                     
+                    // Cache
                     this.lastDrawnColor = this.color;
                     this.lastDrawnAngle = this.angle;
                 },
+                // Returns whether the color picker needs
+                // to be redrawn
                 needsRedraw: function() {
+                    // Return whether last drawn color and
+                    // angle are up to date
                     return  this.lastDrawnColor !== this.color ||
                             this.lastDrawnAngle !== this.angle;
                 },
+                // Invoked when color picker is pressed
                 mousePressed: function(e) {
+                    // Calculate constants
                     var halfSz = this.size/2 | 0;
                     var rOut = _R_OUTER * halfSz;
                     var rIn  = _R_INNER * halfSz;
-                    e.x -= halfSz;
-                    e.y -= halfSz;
+                    // Use center as origin
+                    e.x -= halfSz; // Mouse X
+                    e.y -= halfSz; // Mouse Y
+                    // Get distance from center
                     var dist = pjs.sqrt(e.x * e.x + e.y * e.y);
+                    // If mouse pressed in circle section
                     if(rIn <= dist && dist <= rOut) {
+                        // What section is pressed/dragged.
+                        // Required by mouseDragged func
                         this.draggedSection = _HUE_SECTION;
+                        // Set new point (circle section).
+                        // Will notify that view changed
                         _setHuePoint(this, e.x, e.y);
                     } else {
+                        // Get triangle vertex coords
                         var triPts = _getTrianglePts(_R_TRIANGLE*halfSz, this.angle);
+                        // Get saturation and brightness of
+                        // pressed pt. Returns undefined if
+                        // triangle section wasn't pressed
                         var sb = _getSBAt(e.x, e.y, triPts);
+                        // If triangle section was pressed
                         if(sb) {
+                            // Triangle section is pressed.
+                            // Info for mouseDragged func.
                             this.draggedSection = _SB_SECTION;
+                            // Set new pt (triangle sectn)
                             this.setHSB(this.hsb[0], sb[0], sb[1]);
-                        } else {
+                        }
+                        // Otherwise,
+                        // nothing significant is pressed
+                        else {
+                            // No section is pressed
                             this.draggedSection = undefined;
                             return;
                         }
                     }
                 },
+                // Invoked when mouse is dragged on this
                 mouseDragged: function(e) {
+                    // Use center as origin
                     e.x -= this.size/2 | 0;
                     e.y -= this.size/2 | 0;
+                    // Check what section is dragged
                     switch(this.draggedSection) {
+                        // If circle (hue) section
                         case _HUE_SECTION:
+                            // Set new hue point
                             _setHuePoint(this, e.x, e.y);
                             break;
+                        // If triangle (sat & bri) section
                         case _SB_SECTION:
+                            // Set new sat & bri point
                             _setSBPoint(this, e.x, e.y);
                             break;
+                        // Do nothing if nothing is dragged
                         default:
                             return;
                     }
                 }
             });
+            // End of ColorPicker.prototype
+
+            // Private functions
+
             _getTrianglePts = function(r, angle) {
                 var cosA = pjs.cos(angle);
                 var sinA = pjs.sin(angle);
