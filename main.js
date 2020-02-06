@@ -826,7 +826,7 @@ var main = function() {
                     if(!this.isEnabled)
                         { return; }
                     // Put button in hover state
-                    this.isHovered = true;
+                    this.isBtnHovered = true;
                     // If button is clickale
                     if(this.clickBehavior !== Button.ACTIVATE || !this.isActive) {
                         // Chabge cursor to pointing hand
@@ -841,7 +841,7 @@ var main = function() {
                 // On mouse leave
                 mouseLeft: function() {
                     // Unhover
-                    this.isHovered = false;
+                    this.isBtnHovered = false;
                     // Change cursor back to default
                     pjs.cursor(pjs.ARROW);
                     // If button may look different now
@@ -915,7 +915,7 @@ var main = function() {
                         // If disabled
                         if(!enabled) {
                             // Turn off hover state
-                            this.isHovered = false;
+                            this.isBtnHovered = false;
                             // Make inactive
                             this.setActive(false);
                         }
@@ -926,9 +926,9 @@ var main = function() {
                 // Draws the button
                 draw: function(g) {
                     // Set relevant background color
-                    g.fill(this.isActive  ? this.backgroundActive :
-                          (this.isHovered ? this.backgroundHover  :
-                                            this.background));
+                    g.fill(this.isActive     ? this.backgroundActive :
+                          (this.isBtnHovered ? this.backgroundHover  :
+                                               this.background));
                     // Draw background
                     g.rect(0, 0, g.width-1, g.height-1, 3);
                     // If icon needs redraw
