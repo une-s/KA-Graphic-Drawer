@@ -14,7 +14,7 @@ var main = function() {
         // Track whether Ctrl/Shift/Alt are pressed
         var modifierKeys = {};
         
-        var Vectors, Graphics, ButtonIcons, IO;
+        var Vectors, Graphics, ButtonIcons;
     
         // Init component classes
         
@@ -2289,7 +2289,157 @@ var main = function() {
             };
             return LayerList;
         })();
-        
+
+        var IO = (function() {
+
+            var _DEFAULT_VAR_NAME = "save";
+            var _CHARS ="0123456789ABCDEFGHIJKLMNOPQRSTUV"+
+                        "WXYZabcdefghijklmnopqrstuvwxyz+="+
+                        "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"+
+                        "àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ";
+
+            var _map, _charToCode, _codeToChar, _read, _write, _stripTrailingZeros;
+
+            var IO = function(data) {
+                data = data ? _stripTrailingZeros("" + data) : "";
+
+                if( data ) {
+                    var char = data.charAt(data.length - 1);
+                    var last = _charToCode(char);
+                    var i = 6;
+                    while( !(last & (1 << i)) ) {
+                        i--;
+                    }
+                    this.data = data.substring(0, data.length - 1);
+                    this.length = 7 * this.data.length + i;
+                    if((last &= ~(1 << i))) {
+                        this.data += _codeToChar(last);
+                    }
+                    this.data = _stripTrailingZeros(this.data);
+                }
+            };
+            IO.prototype = {
+                data: "",
+                length: 0,
+                index: 0,
+                canRead: function(numBits) {
+                    numBits = numBits === undefined ? 1 : numBits | 0;
+                    if(numBits < 0 || numBits > 32) {
+                        return false;
+                    }
+                    return this.index + numBits <= this.length;
+                },
+                read: function(numBits) {
+                    numBits = numBits === undefined ? 1 : numBits | 0;
+                    if(!this.canRead(numBits)) {
+                        return false;
+                    }
+                    var value = _read(this.data, this.index, numBits);
+                    this.index += numBits;
+                    return value;
+                },
+                write: function(numBits, value) {
+                    if(numBits === undefined) {
+                        return false;
+                    }
+                    numBits |= 0;
+                    if(numBits < 0 || numBits > 32) {
+                        return false;
+                    }
+                    value &= numBits < 32 ? (1 << numBits) - 1 : -1;
+
+                    this.data = _write(this.data, this.length, value);
+                    this.length += numBits;
+                    if(numBits) {
+                        this.cache = undefined;
+                    }
+                    return true;
+                },
+                resetRead: function() {
+                    this.index = 0;
+                },
+                clear: function() {
+                    this.data = "";
+                    this.index = 0;
+                    this.length = 0;
+                },
+                toString: function() {
+                    if(!this.cache) {
+                        this.cache = _write(this.data, this.length, 1);
+                    }
+                    return this.cache;
+                },
+                print: function(varName) {
+                    varName = varName ? "" + varName : _DEFAULT_VAR_NAME;
+                    pjs.println('var ' + varName + ' = "' + this + '";');
+                }
+            };
+
+            _charToCode = function(char) {
+                if(!_map) {
+                    _map = {};
+                    for(var i = 0; i < _CHARS.length; i++) {
+                        _map[_CHARS.charAt(i)] = i;
+                    }
+                }
+                return _map[char] || 0;
+            };
+            _codeToChar = function(code) {
+                return _CHARS.charAt(code & 127);
+            };
+            _read = function(data, index, numBits) {
+                if(!numBits) {
+                    return 0;
+                }
+
+                var from = (index / 7) | 0;
+                index %= 7;
+                var to = from + ((index + numBits + 6) / 7) | 0;
+                if( from >= data.length ) {
+                    return 0;
+                }
+                var val = 0;
+                for(var i = to - 1; i >= from; i--) {
+                    val *= 128;
+                    val += _charToCode(data.charAt(i));
+                }
+                val = (val / (1 << index)) & (2 * (1 << (numBits-1)) - 1);
+                return val;
+            };
+            _write = function(data, index, val) {
+                if(!val) {
+                    return data;
+                }
+                val += val < 0 ? 0x100000000 : 0;
+
+                var from = (index / 7) | 0;
+                index %= 7;
+                val = val * (1 << index) + _read(data, 7 * from, index);
+
+                var i, append = "";
+                for(i = from; val; i++) {
+                    append += _codeToChar(val & 127);
+                    val = (val / 128) | 0;
+                }
+                if(append) {
+                    var zero = _codeToChar(0);
+                    for(i = from - data.length; i > 0; i--) {
+                        append = zero + append;
+                    }
+                }
+                return data.substring(0, from) + append;
+            };
+            _stripTrailingZeros = function(data) {
+                var end = data.length;
+                while(!_charToCode(data.charAt(end - 1))) {
+                    end--;
+                }
+                return data.substring(0, end);
+            };
+
+            return IO;
+        })();
+
         Vectors = {
             length: function(v) {
                 return pjs.sqrt(v[0]*v[0] + v[1]*v[1]);
@@ -2588,155 +2738,6 @@ var main = function() {
             ButtonIcons.downActive   = Button.createIcon(_drawDownIcon);
             
             return ButtonIcons;
-        })();
-        IO = (function() {
-
-            var _DEFAULT_VAR_NAME = "save";
-            var _CHARS ="0123456789ABCDEFGHIJKLMNOPQRSTUV"+
-                        "WXYZabcdefghijklmnopqrstuvwxyz+="+
-                        "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"+
-                        "àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ";
-
-            var _map, _charToCode, _codeToChar, _read, _write, _stripTrailingZeros;
-
-            var IO = function(data) {
-                data = data ? _stripTrailingZeros("" + data) : "";
-
-                if( data ) {
-                    var char = data.charAt(data.length - 1);
-                    var last = _charToCode(char);
-                    var i = 6;
-                    while( !(last & (1 << i)) ) {
-                        i--;
-                    }
-                    this.data = data.substring(0, data.length - 1);
-                    this.length = 7 * this.data.length + i;
-                    if((last &= ~(1 << i))) {
-                        this.data += _codeToChar(last);
-                    }
-                    this.data = _stripTrailingZeros(this.data);
-                }
-            };
-            IO.prototype = {
-                data: "",
-                length: 0,
-                index: 0,
-                canRead: function(numBits) {
-                    numBits = numBits === undefined ? 1 : numBits | 0;
-                    if(numBits < 0 || numBits > 32) {
-                        return false;
-                    }
-                    return this.index + numBits <= this.length;
-                },
-                read: function(numBits) {
-                    numBits = numBits === undefined ? 1 : numBits | 0;
-                    if(!this.canRead(numBits)) {
-                        return false;
-                    }
-                    var value = _read(this.data, this.index, numBits);
-                    this.index += numBits;
-                    return value;
-                },
-                write: function(numBits, value) {
-                    if(numBits === undefined) {
-                        return false;
-                    }
-                    numBits |= 0;
-                    if(numBits < 0 || numBits > 32) {
-                        return false;
-                    }
-                    value &= numBits < 32 ? (1 << numBits) - 1 : -1;
-
-                    this.data = _write(this.data, this.length, value);
-                    this.length += numBits;
-                    if(numBits) {
-                        this.cache = undefined;
-                    }
-                    return true;
-                },
-                resetRead: function() {
-                    this.index = 0;
-                },
-                clear: function() {
-                    this.data = "";
-                    this.index = 0;
-                    this.length = 0;
-                },
-                toString: function() {
-                    if(!this.cache) {
-                        this.cache = _write(this.data, this.length, 1);
-                    }
-                    return this.cache;
-                },
-                print: function(varName) {
-                    varName = varName ? "" + varName : _DEFAULT_VAR_NAME;
-                    pjs.println('var ' + varName + ' = "' + this + '";');
-                }
-            };
-
-            _charToCode = function(char) {
-                if(!_map) {
-                    _map = {};
-                    for(var i = 0; i < _CHARS.length; i++) {
-                        _map[_CHARS.charAt(i)] = i;
-                    }
-                }
-                return _map[char] || 0;
-            };
-            _codeToChar = function(code) {
-                return _CHARS.charAt(code & 127);
-            };
-            _read = function(data, index, numBits) {
-                if(!numBits) {
-                    return 0;
-                }
-
-                var from = (index / 7) | 0;
-                index %= 7;
-                var to = from + ((index + numBits + 6) / 7) | 0;
-                if( from >= data.length ) {
-                    return 0;
-                }
-                var val = 0;
-                for(var i = to - 1; i >= from; i--) {
-                    val *= 128;
-                    val += _charToCode(data.charAt(i));
-                }
-                val = (val / (1 << index)) & (2 * (1 << (numBits-1)) - 1);
-                return val;
-            };
-            _write = function(data, index, val) {
-                if(!val) {
-                    return data;
-                }
-                val += val < 0 ? 0x100000000 : 0;
-
-                var from = (index / 7) | 0;
-                index %= 7;
-                val = val * (1 << index) + _read(data, 7 * from, index);
-
-                var i, append = "";
-                for(i = from; val; i++) {
-                    append += _codeToChar(val & 127);
-                    val = (val / 128) | 0;
-                }
-                if(append) {
-                    var zero = _codeToChar(0);
-                    for(i = from - data.length; i > 0; i--) {
-                        append = zero + append;
-                    }
-                }
-                return data.substring(0, from) + append;
-            };
-            _stripTrailingZeros = function(data) {
-                var end = data.length;
-                while(!_charToCode(data.charAt(end - 1))) {
-                    end--;
-                }
-                return data.substring(0, end);
-            };
-
-            return IO;
         })();
 
         var canvas, toolbar, colorPanel, strokePanel, layersPanel;
