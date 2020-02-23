@@ -20,6 +20,18 @@ var main = function() {
         // Track whether Ctrl/Shift/Alt are pressed
         var modifierKeys = {};
         
+        var defaults = {
+            COLOR: pjs.color(255, 128, 0),
+            BRUSH_SIZE: 55,
+            ALPHA: 25,
+            BLUR: 22
+        };
+        // Tool identifiers
+        var tools = {
+            BRUSH: 0,
+            ERASER: 1
+        };
+
         var Vectors, Graphics, ButtonIcons, SaveLoad;
     
         // Init component classes
@@ -1040,7 +1052,7 @@ var main = function() {
                     this.onColorChange = config.onColorChange;
                 }
                 // Set starting color
-                this.setColor(config.color || 0xff000000);
+                this.setColor(config.color || defaults.COLOR);
             };
             // End of constructor
 
@@ -1594,7 +1606,7 @@ var main = function() {
         })();
         var Canvas = (function() {
             
-            var _layerProto;
+            var _tools, _layerProto;
             var _init, _toUserCoords, _drawAction, _dist;
             
             var Canvas = function(config) {
@@ -1611,14 +1623,24 @@ var main = function() {
                 imageHeight: 400,
                 background: pjs.color(255, 255, 255),
                 backgroundOuter: pjs.color(63, 69, 87),
-                tool: 'brush',
+                tool: 0,
                 color: pjs.color(0),
-                alpha: 192,
-                size: 10,
-                blur: 2,
+                alpha: defaults.ALPHA,
+                size: defaults.BRUSH_SIZE,
+                blur: defaults.BLUR,
                 currentLayer: -1,
                 currentAction: -1,
                 actionInProgress: false,
+                setTool: function(val) {
+                    if(typeof val === 'string') {
+                        val = _tools[val.toUpperCase()];
+                    }
+                    if(_tools[val]) {
+                        this.tool = val;
+                        return true;
+                    }
+                    return false;
+                },
                 draw: function(g) {
                     var w = this.imageWidth;
                     var h = this.imageHeight;
@@ -1653,7 +1675,7 @@ var main = function() {
                         var w = this.imageWidth;
                         var h = this.imageHeight;
                         switch(this.tool) {
-                            case 'brush':
+                            case _tools.BRUSH:
                                 this.addAction({
                                     action: 'draw',
                                     color: this.color,
@@ -1667,7 +1689,7 @@ var main = function() {
                                     }
                                 }, true);
                                 break;
-                            case 'eraser':
+                            case _tools.ERASER:
                                 this.addAction({
                                     action: 'erase',
                                     alpha: this.alpha,
@@ -1739,6 +1761,12 @@ var main = function() {
                 }
             });
             
+            _tools = {
+                0: "brush",
+                BRUSH: 0,
+                1: "eraser",
+                ERASER: 1
+            };
             _layerProto = {
                 isVisible: true,
                 setVisible: function(visible) {
@@ -2749,7 +2777,12 @@ var main = function() {
 
             var _bits = {
                 VERSION: 7,
-                SIZE: 2
+                SIZE: 2,
+                TOOL: 4,
+                BRUSH_SIZE: 7,
+                ALPHA: 8,
+                BLUR: 7,
+                COLOR: 24,
             };
 
             var _converter, _validator;
@@ -2765,6 +2798,11 @@ var main = function() {
                     io.write(_bits.VERSION, VERSION);
                     io.write(_bits.SIZE, _converter.exportSize(data.width));
                     io.write(_bits.SIZE, _converter.exportSize(data.height));
+                    io.write(_bits.TOOL, data.tool || 0);
+                    io.write(_bits.BRUSH_SIZE, data.brushSize || defaults.BRUSH_SIZE);
+                    io.write(_bits.ALPHA, data.alpha || defaults.ALPHA);
+                    io.write(_bits.BLUR, data.blur || defaults.BLUR);
+                    io.write(_bits.COLOR, data.color || defaults.COLOR);
 
                     io.print();
 
@@ -2782,7 +2820,12 @@ var main = function() {
 
                     return {
                         width: _converter.importSize(io.read(_bits.SIZE)),
-                        height: _converter.importSize(io.read(_bits.SIZE))
+                        height: _converter.importSize(io.read(_bits.SIZE)),
+                        tool: io.read(_bits.TOOL) || 0,
+                        brushSize: _validator.filterBrushSize(io.read(_bits.BRUSH_SIZE)),
+                        alpha: _validator.filterAlpha(io.read(_bits.ALPHA)),
+                        blur: _validator.filterBlur(io.read(_bits.BLUR)),
+                        color: _converter.importColor(io.read(_bits.COLOR)),
                     };
                 }
             };
@@ -2793,6 +2836,9 @@ var main = function() {
                 },
                 exportSize: function(size) {
                     return (size / 100) & 3;
+                },
+                importColor: function(data) {
+                    return 0xFF000000 | (data !== false ? data : defaults.COLOR);
                 }
             };
 
@@ -2807,21 +2853,36 @@ var main = function() {
                         return false;
                     }
                     return true;
+                },
+                filterBrushSize: function(size) {
+                    return this.filterValue(size, 0, 100, defaults.BRUSH_SIZE);
+                },
+                filterAlpha: function(alpha) {
+                    return this.filterValue(alpha, 0, 255, defaults.ALPHA);
+                },
+                filterBlur: function(blur) {
+                    return this.filterValue(blur, 0, 100, defaults.BLUR);
+                },
+                filterValue: function(value, min, max, defaultVal) {
+                    if(value === false) {
+                        value = defaultVal !== undefined ? defaultVal : 0;
+                    }
+                    return pjs.constrain(value, min, max);
                 }
             };
 
             return SaveLoad;
         })();
 
-        var data, canvas, toolbar, colorPanel, strokePanel, layersPanel;
+        var loadedData, canvas, toolbar, colorPanel, strokePanel, layersPanel;
 
-        data = SaveLoad.load() || {};
+        loadedData = SaveLoad.load() || {};
 
         canvas = new Canvas({
             y: 40,
             height: pjs.height - 40,
-            imageWidth: data.width || 400,
-            imageHeight: data.height || 400
+            imageWidth: loadedData.width || 400,
+            imageHeight: loadedData.height || 400
         });
         colorPanel = (function() {
             var colorPanel = new Panel({
@@ -2894,7 +2955,7 @@ var main = function() {
                 x: 1,
                 y: 1,
                 parent: colorPanel,
-                color: pjs.color(210, 247, 64),
+                color: loadedData.color || defaults.COLOR,
                 size: 140,
                 onColorChange: function() {
                     inputR.text = pjs.red(this.color).toString();
@@ -2979,7 +3040,7 @@ var main = function() {
                 parent: strokePanel,
                 x: sliderX,
                 y: sliderY,
-                value: 10,
+                value: loadedData.brushSize || defaults.BRUSH_SIZE,
                 onChange: function() {
                     canvas.size = this.value;
                     sizeInput.text = this.value.toFixed();
@@ -2989,7 +3050,7 @@ var main = function() {
                 parent: strokePanel,
                 x: sliderX,
                 y: sliderY + dist,
-                value: 255,
+                value: loadedData.alpha || defaults.ALPHA,
                 max: 255,
                 onChange: function() {
                     canvas.alpha = this.value;
@@ -3000,7 +3061,7 @@ var main = function() {
                 parent: strokePanel,
                 x: sliderX,
                 y: sliderY + 2*dist,
-                value: 2,
+                value: loadedData.blur || defaults.BLUR,
                 onChange: function() {
                     canvas.blur = this.value;
                     blurInput.text = this.value.toFixed();
@@ -3106,7 +3167,7 @@ var main = function() {
                 isActive: true,
                 onToggle: function(active) {
                     if(active)
-                        { canvas.tool = 'brush'; }
+                        { canvas.setTool('brush'); }
                 },
                 icon: ButtonIcons.brush,
                 iconActive: ButtonIcons.brushActive
@@ -3119,7 +3180,7 @@ var main = function() {
                 clickBehavior: Button.ACTIVATE,
                 onToggle: function(active) {
                     if(active)
-                        { canvas.tool = 'eraser'; }
+                        { canvas.setTool('eraser'); }
                 },
                 icon: ButtonIcons.eraser,
                 iconActive: ButtonIcons.eraserActive
@@ -3181,7 +3242,22 @@ var main = function() {
             var saveButton = new Button({
                 parent: toolbar,
                 x: pjs.width - 37,
-                y: 3
+                y: 3,
+                onToggle: function(active) {
+                    if(active) {
+                        SaveLoad.save({
+                            width: canvas.imageWidth,
+                            height: canvas.imageHeight,
+                            tool: canvas.tool,
+                            alpha: canvas.alpha,
+                            brushSize: canvas.size,
+                            blur: canvas.blur,
+                            color: canvas.color,
+                            actions: canvas.actions,
+                            currentAction: canvas.currentAction
+                        });
+                    }
+                }
             });
             
             return toolbar;
