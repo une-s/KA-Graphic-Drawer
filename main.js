@@ -3131,8 +3131,8 @@ var main = function() {
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
-                onToggle: function() {
-                    if(this.isActive)
+                onToggle: function(active) {
+                    if(active)
                         { colorPanel.show(); }
                     else
                         { colorPanel.hide(); }
@@ -3154,8 +3154,8 @@ var main = function() {
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
-                onToggle: function() {
-                    if(this.isActive)
+                onToggle: function(active) {
+                    if(active)
                         { strokePanel.show(); }
                     else
                         { strokePanel.hide(); }
@@ -3169,8 +3169,8 @@ var main = function() {
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
-                onToggle: function() {
-                    if(this.isActive)
+                onToggle: function(active) {
+                    if(active)
                         { layersPanel.show(); }
                     else
                         { layersPanel.hide(); }
