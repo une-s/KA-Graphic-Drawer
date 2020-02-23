@@ -11,7 +11,7 @@ var main = function() {
 
         /**
          * Replace this line when you save. Make sure you
-         * copy the full string.
+         * copy/paste the full string.
          */
         var save = "";
 
