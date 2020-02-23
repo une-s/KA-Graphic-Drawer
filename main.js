@@ -21,10 +21,12 @@ var main = function() {
         var modifierKeys = {};
         
         var defaults = {
-            COLOR: pjs.color(255, 128, 0),
-            BRUSH_SIZE: 55,
-            ALPHA: 25,
-            BLUR: 22
+            WIDTH: 400,
+            HEIGHT: 400,
+            COLOR: pjs.color(0, 0, 0),
+            BRUSH_SIZE: 5,
+            ALPHA: 255,
+            BLUR: 2
         };
         // Tool identifiers
         var tools = {
@@ -1619,8 +1621,8 @@ var main = function() {
                 _init(this);
             };
             Canvas.prototype = Object.assign(Object.create(Component.prototype), {
-                imageWidth: 400,
-                imageHeight: 400,
+                imageWidth: defaults.WIDTH,
+                imageHeight: defaults.HEIGHT,
                 background: pjs.color(255, 255, 255),
                 backgroundOuter: pjs.color(63, 69, 87),
                 tool: 0,
@@ -2881,8 +2883,8 @@ var main = function() {
         canvas = new Canvas({
             y: 40,
             height: pjs.height - 40,
-            imageWidth: loadedData.width || 400,
-            imageHeight: loadedData.height || 400
+            imageWidth: loadedData.width || defaults.WIDTH,
+            imageHeight: loadedData.height || defaults.HEIGHT
         });
         colorPanel = (function() {
             var colorPanel = new Panel({
