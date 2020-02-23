@@ -3127,7 +3127,7 @@ var main = function() {
             
             var colorButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 107,
+                x: pjs.width - 147,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3150,7 +3150,7 @@ var main = function() {
             });
             var strokeButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 72,
+                x: pjs.width - 112,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3165,7 +3165,7 @@ var main = function() {
             });
             var layersButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 37,
+                x: pjs.width - 77,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3177,6 +3177,11 @@ var main = function() {
                 },
                 icon: ButtonIcons.layers,
                 iconActive: ButtonIcons.layersActive
+            });
+            var saveButton = new Button({
+                parent: toolbar,
+                x: pjs.width - 37,
+                y: 3
             });
             
             return toolbar;
