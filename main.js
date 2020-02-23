@@ -28,11 +28,6 @@ var main = function() {
             ALPHA: 255,
             BLUR: 2
         };
-        // Tool identifiers
-        var tools = {
-            BRUSH: 0,
-            ERASER: 1
-        };
 
         var Vectors, Graphics, ButtonIcons, SaveLoad;
     
