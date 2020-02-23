@@ -8,13 +8,19 @@ var show = 1;
 
 var main = function() {
     var init = function(pjs) {
-        
+
+        /**
+         * Replace this line when you save. Make sure you
+         * copy the full string.
+         */
         var save = "";
+
+        var VERSION = "1";
 
         // Track whether Ctrl/Shift/Alt are pressed
         var modifierKeys = {};
         
-        var Vectors, Graphics, ButtonIcons;
+        var Vectors, Graphics, ButtonIcons, SaveLoad;
     
         // Init component classes
         
@@ -2739,12 +2745,83 @@ var main = function() {
             
             return ButtonIcons;
         })();
+        SaveLoad = (function() {
 
-        var canvas, toolbar, colorPanel, strokePanel, layersPanel;
-        
+            var _bits = {
+                VERSION: 7,
+                SIZE: 2
+            };
+
+            var _converter, _validator;
+
+            var SaveLoad = {
+                save: function(data) {
+                    if(!data) {
+                        return;
+                    }
+
+                    var io = new IO();
+
+                    io.write(_bits.VERSION, VERSION);
+                    io.write(_bits.SIZE, _converter.exportSize(data.width));
+                    io.write(_bits.SIZE, _converter.exportSize(data.height));
+
+                    io.print();
+
+                    return true;
+                },
+                load: function() {
+                    if(!save) {
+                        return;
+                    }
+                    var io = new IO(save);
+
+                    if(!_validator.checkVersion(io.read(_bits.VERSION))) {
+                        return false;
+                    }
+
+                    return {
+                        width: _converter.importSize(io.read(_bits.SIZE)),
+                        height: _converter.importSize(io.read(_bits.SIZE))
+                    };
+                }
+            };
+
+            _converter = {
+                importSize: function(data) {
+                    return 100 * (data % 3) + 400;
+                },
+                exportSize: function(size) {
+                    return (size / 100) & 3;
+                }
+            };
+
+            _validator = {
+                checkVersion: function(ver) {
+                    if(!ver) {
+                        pjs.println("Invalid save string.");
+                        return false;
+                    }
+                    if(ver > VERSION) {
+                        pjs.println("That save string requires program version " + ver + " or higher. If you think this is a mistake, please double-check your string.");
+                        return false;
+                    }
+                    return true;
+                }
+            };
+
+            return SaveLoad;
+        })();
+
+        var data, canvas, toolbar, colorPanel, strokePanel, layersPanel;
+
+        data = SaveLoad.load() || {};
+
         canvas = new Canvas({
             y: 40,
-            height: pjs.height - 40
+            height: pjs.height - 40,
+            imageWidth: data.width || 400,
+            imageHeight: data.height || 400
         });
         colorPanel = (function() {
             var colorPanel = new Panel({
@@ -3189,7 +3266,7 @@ var main = function() {
                 { comp.keyReleased(); }
         };
         // }
-        
+
         pjs.draw = function() {
             if(!pjs.focused) {
                 Component.clearFocus();
