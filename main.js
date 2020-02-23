@@ -3039,8 +3039,8 @@ var main = function() {
                 y: sliderY,
                 value: loadedData.brushSize || defaults.BRUSH_SIZE,
                 onChange: function() {
-                    canvas.size = this.value;
                     sizeInput.text = this.value.toFixed();
+                    canvas.size = +sizeInput.text;
                 }
             });
             var alphaSlider = new Slider({
@@ -3050,8 +3050,8 @@ var main = function() {
                 value: loadedData.alpha || defaults.ALPHA,
                 max: 255,
                 onChange: function() {
-                    canvas.alpha = this.value;
                     alphaInput.text = this.value.toFixed();
+                    canvas.alpha = +alphaInput.text;
                 }
             });
             var blurSlider = new Slider({
@@ -3060,8 +3060,8 @@ var main = function() {
                 y: sliderY + 2*dist,
                 value: loadedData.blur || defaults.BLUR,
                 onChange: function() {
-                    canvas.blur = this.value;
                     blurInput.text = this.value.toFixed();
+                    canvas.blur = +blurInput.text;
                 }
             });
             
