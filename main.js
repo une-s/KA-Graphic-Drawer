@@ -2780,6 +2780,7 @@ var main = function() {
                 ALPHA: 8,
                 BLUR: 7,
                 COLOR: 24,
+                ACTION_COUNT: 24
             };
 
             var _converter, _validator;
@@ -2800,6 +2801,11 @@ var main = function() {
                     io.write(_bits.ALPHA, data.alpha || defaults.ALPHA);
                     io.write(_bits.BLUR, data.blur || defaults.BLUR);
                     io.write(_bits.COLOR, data.color || defaults.COLOR);
+                    if(data.actions) {
+                        var curr = data.currentAction;
+                        io.write(_bits.ACTION_COUNT, curr !== undefined ? curr : -1);
+                        _converter.exportActions(data.actions, io);
+                    }
 
                     io.print();
 
@@ -2823,6 +2829,8 @@ var main = function() {
                         alpha: _validator.filterAlpha(io.read(_bits.ALPHA)),
                         blur: _validator.filterBlur(io.read(_bits.BLUR)),
                         color: _converter.importColor(io.read(_bits.COLOR)),
+                        currentAction: _converter.importCurrentAction(io.read(_bits.ACTION_COUNT)),
+                        actions: _converter.importActions(io)
                     };
                 }
             };
@@ -2836,6 +2844,26 @@ var main = function() {
                 },
                 importColor: function(data) {
                     return 0xFF000000 | (data !== false ? data : defaults.COLOR);
+                },
+                importCurrentAction: function(data) {
+                    if(data === false || data === (1 << _bits.CURRENT_ACTION) - 1) {
+                        return -1;
+                    }
+                    return data;
+                },
+                importActions: function(io) {
+                    var actions = [];
+                    var length = io.read(_bits.ACTION_COUNT);
+                    for(var i = 0; i < length; i++) {
+
+                    }
+                    return actions;
+                },
+                exportActions: function(actions, io) {
+                    io.write(_bits.ACTION_COUNT, actions.length);
+                    for(var i = 0; i < actions.length; i++) {
+                        
+                    }
                 }
             };
 
