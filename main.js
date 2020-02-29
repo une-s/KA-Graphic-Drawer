@@ -29,7 +29,7 @@ var main = function() {
             BLUR: 2
         };
 
-        var Vectors, Graphics, ButtonIcons, SaveLoad;
+        var Action, Vectors, Graphics, ButtonIcons, SaveLoad;
     
         // Init component classes
         
@@ -1674,7 +1674,7 @@ var main = function() {
                         switch(this.tool) {
                             case _tools.BRUSH:
                                 this.addAction({
-                                    action: 'draw',
+                                    action: Action.DRAW,
                                     color: this.color,
                                     alpha: this.alpha,
                                     size: this.size,
@@ -1688,7 +1688,7 @@ var main = function() {
                                 break;
                             case _tools.ERASER:
                                 this.addAction({
-                                    action: 'erase',
+                                    action: Action.ERASE,
                                     alpha: this.alpha,
                                     size: this.size,
                                     blur: this.blur,
@@ -1741,7 +1741,7 @@ var main = function() {
                     });
                     this.layers.splice(layer.index, 0, layer);
                     this.addAction({
-                        action: "add_layer",
+                        action: Action.ADD_LAYER,
                         name: layer.name,
                         index: layer.index
                     });
@@ -1770,7 +1770,7 @@ var main = function() {
                     if(visible !== this.isVisible) {
                         this.isVisible = visible;
                         this.canvas.addAction({
-                            action: visible ? "show_layer" : "hide_layer",
+                            action: visible ? Action.SHOW_LAYER : Action.HIDE_LAYER,
                             index: this.index
                         });
                         this.canvas.needsRedraw = true;
@@ -1784,7 +1784,7 @@ var main = function() {
                     if(!this.isSelected()) {
                         this.canvas.currentLayer = this.index;
                         this.canvas.addAction({
-                            action: "select_layer",
+                            action: Action.SELECT_LAYER,
                             index: this.index
                         });
                     }
@@ -1802,7 +1802,7 @@ var main = function() {
                     if(currLayer === this.index || currLayer === that.index)
                         { canvas.currentLayer ^= this.index ^ that.index; }
                     canvas.addAction({
-                        action: "swap_layers",
+                        action: Action.SWAP_LAYERS,
                         index1: that.index,
                         index2: this.index
                     });
@@ -1818,7 +1818,7 @@ var main = function() {
                         layers[i].index = i;
                     }
                     this.canvas.addAction({
-                        action: 'remove_layer',
+                        action: Action.REMOVE_LAYER,
                         index: this.index
                     });
                     this.index = -1;
@@ -1866,8 +1866,8 @@ var main = function() {
                 }
                 g = tempData.graphics;
                 switch(action.action) {
-                    case 'draw':
-                    case 'erase':
+                    case Action.DRAW:
+                    case Action.ERASE:
                         points = action.points;
                         if(2*tempData.drawnPts === points.length)
                             { break; }
@@ -1901,10 +1901,10 @@ var main = function() {
                                         alpha *= mult * mult;
                                     }
                                     var color;
-                                    if(action.action === 'draw') {
+                                    if(action.action === Action.DRAW) {
                                         color = action.color & 0xffffff;
                                         color |= alpha << 24;
-                                    } else if(action.action === 'erase') {
+                                    } else if(action.action === Action.ERASE) {
                                         color = 0xffffff | ((255 - alpha) << 24);
                                     }
                                     i = (g.width * y + x) << 2;
@@ -1921,10 +1921,10 @@ var main = function() {
                         break;
                 }
                 switch(action.action) {
-                    case 'draw':
+                    case Action.DRAW:
                         Graphics.image(graphics, g, 0, 0, 0, 0, action.alpha);
                         break;
-                    case 'erase':
+                    case Action.ERASE:
                         Graphics.mask(graphics, g, 0, 0, 0, 0, action.alpha);
                         break;
                 }
@@ -2245,16 +2245,16 @@ var main = function() {
                     var actions = this.canvas.actions;
                     var action = actions[this.canvas.currentAction];
                     switch(action.action) {
-                        case 'add_layer':
+                        case Action.ADD_LAYER:
                             _addLayer(this, currLayer, action.name);
                             break;
-                        case 'swap_layers':
+                        case Action.SWAP_LAYERS:
                             var comp1 = this.children[action.index1];
                             var comp2 = this.children[action.index2];
                             this.children[action.index1] = comp2;
                             this.children[action.index2] = comp1;
                             break;
-                        case 'remove_layer':
+                        case Action.REMOVE_LAYER:
                             this.removeChild(action.index);
                             break;
                     }
@@ -2471,6 +2471,71 @@ var main = function() {
             return IO;
         })();
 
+        Action = (function() {
+            var _meta = [];
+
+            var Action = {
+                ADD_LAYER: 0,
+                REMOVE_LAYER: 1,
+                SELECT_LAYER: 2,
+                SHOW_LAYER: 3,
+                HIDE_LAYER: 4,
+                SWAP_LAYERS: 5,
+                DRAW: 6,
+                ERASE: 7,
+                getLabel: function(key) {
+                    var meta = _meta[key];
+                    return meta ? meta.label : undefined;
+                },
+                getSchema: function(key) {
+                    var meta = _meta[key];
+                    return meta ? meta.schema : undefined;
+                }
+            };
+
+            _meta[Action.ADD_LAYER] = {label: "Add layer"};
+            _meta[Action.REMOVE_LAYER] = {label: "Remove layer"};
+            _meta[Action.SELECT_LAYER] = {label: "Select layer"};
+            _meta[Action.SHOW_LAYER] = {label: "Show layer"};
+            _meta[Action.HIDE_LAYER] = {label: "Hide layer"};
+            _meta[Action.SWAP_LAYERS] = {label: "Swap layers"};
+            _meta[Action.DRAW] = {label: "Draw"};
+            _meta[Action.ERASE] = {label: "Erase"};
+
+            _meta[Action.ADD_LAYER].schema = [
+                {key: 'name', type: 'string'},
+                {key: 'index', type: 'number', bits: 24}
+            ];
+            _meta[Action.REMOVE_LAYER].schema = (
+            _meta[Action.SELECT_LAYER].schema = (
+            _meta[Action.SHOW_LAYER].schema = (
+            _meta[Action.HIDE_LAYER].schema = [
+                {key: 'index', type: 'number', bits: 24}
+            ])));
+            _meta[Action.SWAP_LAYERS].schema = [
+                {key: 'index1', type: 'number', bits: 24},
+                {key: 'index2', type: 'number', bits: 24}
+            ];
+            _meta[Action.DRAW].schema = [
+                {key: 'color', type: 'color'},
+                {key: 'alpha', type: 'number', bits: 8},
+                {key: 'size', type: 'number', bits: 7},
+                {key: 'blur', type: 'number', bits: 7},
+                {key: 'points', type: 'array', bits: 24,
+                    content: {type: 'number', bits: 14, step: 0.25}
+                }
+            ];
+            _meta[Action.ERASE].schema = [
+                {key: 'alpha', type: 'number', bits: 8},
+                {key: 'size', type: 'number', bits: 7},
+                {key: 'blur', type: 'number', bits: 7},
+                {key: 'points', type: 'array', bits: 24,
+                    content: {type: 'number', bits: 14, step: 0.25}
+                }
+            ];
+
+            return Action;
+        })();
         Vectors = {
             length: function(v) {
                 return pjs.sqrt(v[0]*v[0] + v[1]*v[1]);
@@ -2780,7 +2845,10 @@ var main = function() {
                 ALPHA: 8,
                 BLUR: 7,
                 COLOR: 24,
-                ACTION_COUNT: 24
+                ACTION_COUNT: 32,
+                ACTION_TYPE: 5,
+                CHAR_COUNT: 6,
+                CHAR_CODE: 8
             };
 
             var _converter, _validator;
@@ -2793,21 +2861,25 @@ var main = function() {
 
                     var io = new IO();
 
-                    io.write(_bits.VERSION, VERSION);
-                    io.write(_bits.SIZE, _converter.exportSize(data.width));
-                    io.write(_bits.SIZE, _converter.exportSize(data.height));
-                    io.write(_bits.TOOL, data.tool || 0);
-                    io.write(_bits.BRUSH_SIZE, data.brushSize || defaults.BRUSH_SIZE);
-                    io.write(_bits.ALPHA, data.alpha || defaults.ALPHA);
-                    io.write(_bits.BLUR, data.blur || defaults.BLUR);
-                    io.write(_bits.COLOR, data.color || defaults.COLOR);
-                    if(data.actions) {
-                        var curr = data.currentAction;
-                        io.write(_bits.ACTION_COUNT, curr !== undefined ? curr : -1);
-                        _converter.exportActions(data.actions, io);
-                    }
+                    try {
+                        io.write(_bits.VERSION, VERSION);
+                        io.write(_bits.SIZE, _converter.exportSize(data.width));
+                        io.write(_bits.SIZE, _converter.exportSize(data.height));
+                        io.write(_bits.TOOL, data.tool || 0);
+                        io.write(_bits.BRUSH_SIZE, data.brushSize || defaults.BRUSH_SIZE);
+                        io.write(_bits.ALPHA, data.alpha || defaults.ALPHA);
+                        io.write(_bits.BLUR, data.blur || defaults.BLUR);
+                        io.write(_bits.COLOR, data.color || defaults.COLOR);
+                        if(data.actions) {
+                            var curr = data.currentAction;
+                            io.write(_bits.ACTION_COUNT, curr !== undefined ? curr : -1);
+                            _converter.exportActions(data.actions, io);
+                        }
 
-                    io.print();
+                        io.print();
+                    } catch(err) {
+                        pjs.println("Something went wrong while trying to save drawing.");
+                    }
 
                     return true;
                 },
@@ -2817,21 +2889,26 @@ var main = function() {
                     }
                     var io = new IO(save);
 
-                    if(!_validator.checkVersion(io.read(_bits.VERSION))) {
+                    try {
+                        if(!_validator.checkVersion(io.read(_bits.VERSION))) {
+                            return false;
+                        }
+
+                        return {
+                            width: _converter.importSize(io.read(_bits.SIZE)),
+                            height: _converter.importSize(io.read(_bits.SIZE)),
+                            tool: io.read(_bits.TOOL) || 0,
+                            brushSize: _validator.filterBrushSize(io.read(_bits.BRUSH_SIZE)),
+                            alpha: _validator.filterAlpha(io.read(_bits.ALPHA)),
+                            blur: _validator.filterBlur(io.read(_bits.BLUR)),
+                            color: _converter.importColor(io.read(_bits.COLOR)),
+                            currentAction: _converter.importCurrentAction(io.read(_bits.ACTION_COUNT)),
+                            actions: _converter.importActions(io)
+                        };
+                    } catch(err) {
+                        pjs.println("Something went wrong while trying to load saved drawing.");
                         return false;
                     }
-
-                    return {
-                        width: _converter.importSize(io.read(_bits.SIZE)),
-                        height: _converter.importSize(io.read(_bits.SIZE)),
-                        tool: io.read(_bits.TOOL) || 0,
-                        brushSize: _validator.filterBrushSize(io.read(_bits.BRUSH_SIZE)),
-                        alpha: _validator.filterAlpha(io.read(_bits.ALPHA)),
-                        blur: _validator.filterBlur(io.read(_bits.BLUR)),
-                        color: _converter.importColor(io.read(_bits.COLOR)),
-                        currentAction: _converter.importCurrentAction(io.read(_bits.ACTION_COUNT)),
-                        actions: _converter.importActions(io)
-                    };
                 }
             };
 
@@ -2841,6 +2918,24 @@ var main = function() {
                 },
                 exportSize: function(size) {
                     return (size / 100) & 3;
+                },
+                importString: function(io) {
+                    var str = "";
+                    var length = io.read(_bits.CHAR_COUNT);
+                    for(var i = 0; i < length; i++) {
+                        var code = _validator.filterCharCode(io.read(_bits.CHAR_CODE));
+                        str += String.fromCharCode(code);
+                    }
+                    return str;
+                },
+                exportString: function(str, io) {
+                    str = str ? "" + str : "";
+                    var length = pjs.min(str.length, pjs.pow(2, _bits.CHAR_COUNT) - 1);
+                    io.write(_bits.CHAR_COUNT, length);
+                    for(var i = 0; i < length; i++) {
+                        var code = _validator.filterCharCode(str.charCodeAt(i));
+                        io.write(_bits.CHAR_CODE, code);
+                    }
                 },
                 importColor: function(data) {
                     return 0xFF000000 | (data !== false ? data : defaults.COLOR);
@@ -2855,14 +2950,77 @@ var main = function() {
                     var actions = [];
                     var length = io.read(_bits.ACTION_COUNT);
                     for(var i = 0; i < length; i++) {
-
+                        var type = io.read(_bits.ACTION_TYPE);
+                        var action = {action: type};
+                        var schema = Action.getSchema(type);
+                        for(var j = 0; j < schema.length; j++) {
+                            var meta = schema[j];
+                            var value = this.importValue(io, meta);
+                            action[meta.key] = value;
+                        }
+                        actions[i] = action;
                     }
                     return actions;
                 },
                 exportActions: function(actions, io) {
                     io.write(_bits.ACTION_COUNT, actions.length);
                     for(var i = 0; i < actions.length; i++) {
-                        
+                        var action = actions[i];
+                        io.write(_bits.ACTION_TYPE, action.action);
+                        var schema = Action.getSchema(action.action);
+                        for(var j = 0; j < schema.length; j++) {
+                            var meta = schema[j];
+                            var value = action[meta.key];
+                            this.exportValue(value, io, meta);
+                        }
+                    }
+                },
+                importValue: function(io, meta) {
+                    meta = meta || {};
+                    var bits = meta.bits || 32;
+                    var step = meta.step || 1;
+                    var value, length, i;
+
+                    switch(meta.type) {
+                        case 'string':
+                            return this.importString(io);
+                        case 'color':
+                            return this.importColor(io.read(_bits.COLOR));
+                        case 'number':
+                            return io.read(bits) * step;
+                        case 'array':
+                            value = [];
+                            length = io.read(bits);
+                            for(i = 0; i < length; i++) {
+                                value[i] = this.importValue(io, meta.content);
+                            }
+                            return value;
+                    }
+                },
+                exportValue: function(value, io, meta) {
+                    meta = meta || {};
+                    var bits = meta.bits || 32;
+                    var step = meta.step || 1;
+                    var length, i;
+                    
+                    switch(meta.type) {
+                        case 'string':
+                            this.exportString(value, io);
+                            break;
+                        case 'color':
+                            io.write(_bits.COLOR, value);
+                            break;
+                        case 'number':
+                            io.write(bits, pjs.round(value / step));
+                            break;
+                        case 'array':
+                            value = value || [];
+                            length = pjs.min(value.length, pjs.pow(2, bits) - 1);
+                            io.write(bits, length);
+                            for(i = 0; i < length; i++) {
+                                this.exportValue(value[i], io, meta.content);
+                            }
+                            break;
                     }
                 }
             };
@@ -2878,6 +3036,13 @@ var main = function() {
                         return false;
                     }
                     return true;
+                },
+                filterCharCode: function(code) {
+                    code = +code;
+                    if(code < 32 || code > 255 || code >= 127 && code < 160) {
+                        return 63;
+                    }
+                    return code;
                 },
                 filterBrushSize: function(size) {
                     return this.filterValue(size, 0, 100, defaults.BRUSH_SIZE);
