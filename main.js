@@ -1750,7 +1750,7 @@ var main = function() {
                     }
                 },
                 addAction: function(action, inProgress) {
-                    if(!this.actionInProgress) {
+                    if(!this.actionInProgress && !this.freezeActions) {
                         this.actions.splice(++this.currentAction);
                         this.actions.push(action);
                         this.actionInProgress = !!inProgress;
@@ -1835,7 +1835,9 @@ var main = function() {
                 var scale = pjs.min((w - 2*margin) / imgW, (h - 2*margin) / imgH);
                 canvas.actions = [];
                 canvas.layers = [];
+                canvas.freezeActions = true;
                 canvas.addLayer('Background');
+                canvas.freezeActions = false;
                 
                 canvas.graphics.beginDraw();
                 canvas.graphics.translate(w/2,h/2);
