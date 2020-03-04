@@ -56,6 +56,9 @@ var main = function() {
             var _focusedComp;
             // Currently hovered component
             var _hoveredComp;
+            // Info on the fullscreen component,
+            // This is null/undefined if no fulscreen comp
+            var _fullscreen;
             // Whether changes exist. Contains a bool plus
             // 0 or more functions, each returning a bool.
             // Must redraw view if at least one is  true.
@@ -323,6 +326,56 @@ var main = function() {
                         }
                     }
                 },
+                // Whether this component is fullscreen
+                isFullscreen: function() {
+                    return _fullscreen && _fullscreen.comp === this;
+                },
+                // Toggles fullscreen on/off
+                // Currently only works on components that
+                // are direct children of the root comp
+                toggleFullscreen: function(on) {
+                    var fs;
+                    // Must be generation 1 to work (i.e.
+                    // child of root component) or it could
+                    // fall outside the boundaries of its
+                    // parent and not be fully drawn.
+                    if( this.generation !== 1 ) {
+                        return false;
+                    }
+                    // Ignore if no change
+                    if( (on = !!on) === this.isFullscreen() ) {
+                        return false;
+                    }
+                    // Toggle fullscreen on
+                    if( on ) {
+                        // First toggle off existing fullscreen
+                        if( _fullscreen ) {
+                            _fullscreen.comp.toggleFullscreen(false);
+                        }
+                        // Ready new fullscreen object
+                        fs = {
+                            comp: this,
+                            // Store bounds before fullscrn
+                            x: this.x,
+                            y: this.y,
+                            width: this.width,
+                            height: this.height
+                        };
+                        // Make fullscreen
+                        this.setLocation(0, 0);
+                        this.resize(pjs.width, pjs.height);
+                        _fullscreen = fs;
+                    }
+                    // Toggle fullscreen off
+                    else {
+                        fs = _fullscreen;
+                        _fullscreen = null;
+                        // Return to original bounds
+                        this.resize(fs.width, fs.height);
+                        this.setLocation(fs.x, fs.y);
+                    }
+                    return true;
+                },
                 // Press this component
                 press: function(x, y) {
                     if(!this.isPressed) {
@@ -476,10 +529,20 @@ var main = function() {
                 _changes[0] = false;
                 // Clear graphics
                 pjs.background(255, 255, 255);
+
+                // Get starting comp
+                var root = Component.getFullscreenComp() || Component.root;
                 // Draw component tree
-                if(!Component.root.hidden) {
-                    Component.root.draw(pjs);
-                    Component.root.drawChildren();
+                if(!Component.root.hidden && !root.hidden) {
+                    root.draw(pjs);
+                    root.drawChildren();
+                }
+            };
+            // Returns the component that is currently
+            // fullscreen, or undefined if none
+            Component.getFullscreenComp = function() {
+                if(_fullscreen) {
+                    return _fullscreen.comp;
                 }
             };
             // Register that the view has changed.
