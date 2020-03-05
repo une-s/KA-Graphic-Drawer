@@ -506,17 +506,24 @@ var main = function() {
                 // True if not hidden and does not
                 // have a hidden ancestor
                 isVisible: function() {
-                    // For this and all ancestors
+                    // The fullscreen component, if any
+                    var fs = Component.getFullscreenComp();
+                    // Whether this comp is contained in fs
+                    var inFs = false;
+                    // For this and all ancestors, do:
                     var comp = this;
                     while(comp) {
                         // Return false if hidden exists
                         if(comp.hidden) {
                             return false;
                         }
+                        inFs = inFs || (fs === comp);
                         comp = comp.parent;
                     }
-                    // Otherwise return true
-                    return true;
+                    // Return true if there is no
+                    // fullscreen component, or if this is
+                    // inside the fullscreen component
+                    return !fs || inFs;
                 }
             };
             // End of root component / prototype component
