@@ -3543,6 +3543,19 @@ var main = function() {
                 iconActive: ButtonIcons.layersActive
             });
 
+            var separator = new Component({
+                parent: toolbar,
+                x: pjs.width - 76,
+                y: 5,
+                width: 1,
+                height: toolbar.height - 10,
+                foreground: pjs.color(168, 168, 168),
+                draw: function(g) {
+                    g.background(this.foreground);
+                    this.needsRedraw = false;
+                }
+            });
+
             var fullscreenButton = new Button({
                 parent: toolbar,
                 x: pjs.width - 72,
