@@ -1954,8 +1954,8 @@ var main = function() {
             _toUserCoords = function(canvas, x, y) {
                 var bounds = canvas.bounds;
                 return {
-                    x: (x - bounds.x)/canvas.scale,
-                    y: (y - bounds.y)/canvas.scale
+                    x: pjs.round((x - bounds.x)/canvas.scale),
+                    y: pjs.round((y - bounds.y)/canvas.scale)
                 };
             };
             _drawAction = function(graphics, action) {
@@ -2631,7 +2631,7 @@ var main = function() {
                 {key: 'size', type: 'number', bits: 7},
                 {key: 'blur', type: 'number', bits: 7},
                 {key: 'points', type: 'array', bits: 24,
-                    content: {type: 'number', bits: 12, step: 0.25, offset: -212}
+                    content: {type: 'number', bits: 10, offset: -212}
                 }
             ];
             _meta[Action.ERASE].schema = [
@@ -2639,7 +2639,7 @@ var main = function() {
                 {key: 'size', type: 'number', bits: 7},
                 {key: 'blur', type: 'number', bits: 7},
                 {key: 'points', type: 'array', bits: 24,
-                    content: {type: 'number', bits: 12, step: 0.25, offset: -212}
+                    content: {type: 'number', bits: 10, offset: -212}
                 }
             ];
 
