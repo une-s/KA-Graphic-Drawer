@@ -2631,7 +2631,7 @@ var main = function() {
                 {key: 'size', type: 'number', bits: 7},
                 {key: 'blur', type: 'number', bits: 7},
                 {key: 'points', type: 'array', bits: 24,
-                    content: {type: 'number', bits: 12, step: 0.25}
+                    content: {type: 'number', bits: 12, step: 0.25, offset: -212}
                 }
             ];
             _meta[Action.ERASE].schema = [
@@ -2639,7 +2639,7 @@ var main = function() {
                 {key: 'size', type: 'number', bits: 7},
                 {key: 'blur', type: 'number', bits: 7},
                 {key: 'points', type: 'array', bits: 24,
-                    content: {type: 'number', bits: 12, step: 0.25}
+                    content: {type: 'number', bits: 12, step: 0.25, offset: -212}
                 }
             ];
 
@@ -3106,6 +3106,7 @@ var main = function() {
                     meta = meta || {};
                     var bits = meta.bits || 32;
                     var step = meta.step || 1;
+                    var offset = meta.offset || 0;
                     var value, length, i;
 
                     switch(meta.type) {
@@ -3114,7 +3115,7 @@ var main = function() {
                         case 'color':
                             return this.importColor(io.read(_bits.COLOR));
                         case 'number':
-                            return io.read(bits) * step;
+                            return io.read(bits) * step + offset;
                         case 'array':
                             value = [];
                             length = io.read(bits);
@@ -3128,6 +3129,7 @@ var main = function() {
                     meta = meta || {};
                     var bits = meta.bits || 32;
                     var step = meta.step || 1;
+                    var offset = meta.offset || 0;
                     var length, i;
                     
                     switch(meta.type) {
@@ -3138,7 +3140,11 @@ var main = function() {
                             io.write(_bits.COLOR, value);
                             break;
                         case 'number':
-                            io.write(bits, pjs.round(value / step));
+                            value = (value - offset) / step;
+                            if(bits < 32) {
+                                value = pjs.constrain(value, 0, (1 << bits) - 1);
+                            }
+                            io.write(bits, pjs.round(value));
                             break;
                         case 'array':
                             value = value || [];
