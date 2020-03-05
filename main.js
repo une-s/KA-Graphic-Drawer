@@ -1673,7 +1673,7 @@ var main = function() {
         var Canvas = (function() {
             
             var _tools, _layerProto;
-            var _init, _toUserCoords, _drawAction, _dist;
+            var _initOrUpdate, _toUserCoords, _drawAction, _dist;
             
             var Canvas = function(config) {
                 config = config || {};
@@ -1682,7 +1682,7 @@ var main = function() {
                 if(config.imageHeight) { this.imageHeight = config.imageHeight; }
                 if(config.backgroundOuter)
                     { this.backgroundOuter = config.backgroundOuter; }
-                _init(this);
+                _initOrUpdate(this);
             };
             Canvas.prototype = Object.assign(Object.create(Component.prototype), {
                 imageWidth: defaults.WIDTH,
@@ -1730,6 +1730,14 @@ var main = function() {
                         }
                     }
                     this.needsRedraw = false;
+                },
+                toggleFullscreen: function(on) {
+                    var sup = Component.prototype;
+                    var change = sup.toggleFullscreen.call(this, on);
+                    if(change) {
+                        _initOrUpdate(this);
+                    }
+                    return change;
                 },
                 mousePressed: function(e) {
                     e = _toUserCoords(this, e.x, e.y);
@@ -1895,20 +1903,30 @@ var main = function() {
                 }
             };
             
-            _init = function(canvas) {
-                var margin = 4;
+            _initOrUpdate = function(canvas) {
+                var needsInit = !canvas.bounds;
+
+                var fs = canvas.isFullscreen();
+                var margin = fs ? 0 : 4;
                 var w = canvas.width;
                 var h = canvas.height;
                 var imgW = canvas.imageWidth;
                 var imgH = canvas.imageHeight;
                 var scale = pjs.min((w - 2*margin) / imgW, (h - 2*margin) / imgH);
-                canvas.actions = [];
-                canvas.layers = [];
-                canvas.freezeActions = true;
-                canvas.addLayer('Background');
-                canvas.freezeActions = false;
-                
+
                 canvas.graphics.beginDraw();
+
+                if(needsInit) {
+                    canvas.actions = [];
+                    canvas.layers = [];
+                    canvas.freezeActions = true;
+                    canvas.addLayer('Background');
+                    canvas.freezeActions = false;
+                } else {
+                    canvas.graphics.popMatrix();
+                }
+
+                canvas.graphics.pushMatrix();
                 canvas.graphics.translate(w/2,h/2);
                 canvas.graphics.scale(scale,scale);
                 canvas.graphics.translate(-imgW/2,-imgH/2);
