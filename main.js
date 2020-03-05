@@ -585,7 +585,7 @@ var main = function() {
             // Returns the component at the given coords
             Component.getComponentAt = function(x, y) {
                 // Get root
-                var root = Component.root;
+                var root = Component.getFullscreenComp() || Component.root;
                 // If point not in root, return
                 if(!root.containsGlobalPt(x, y) || root.hidden) {
                     return;
