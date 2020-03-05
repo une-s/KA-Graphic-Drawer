@@ -534,8 +534,14 @@ var main = function() {
                 var root = Component.getFullscreenComp() || Component.root;
                 // Draw component tree
                 if(!Component.root.hidden && !root.hidden) {
-                    root.draw(pjs);
+                    root.draw(root.graphics);
                     root.drawChildren();
+                    // If starting comp is not using the
+                    // global graphics
+                    if(root.graphics !== pjs) {
+                        // Draw it onto the global graphics
+                        pjs.image(root.graphics);
+                    }
                 }
             };
             // Returns the component that is currently
