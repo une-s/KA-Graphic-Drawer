@@ -2301,6 +2301,8 @@ var main = function() {
                 Component.call(this, config);
                 if(config.canvas)
                     { this.canvas = config.canvas; }
+                if(config.onListChange)
+                    { this.onListChange = config.onListChange; }
                 _init(this);
             };
             LayerList.prototype = Object.assign(Object.create(Component.prototype), {
@@ -2322,8 +2324,13 @@ var main = function() {
                         case Action.REMOVE_LAYER:
                             this.removeChild(action.index);
                             break;
+                        default:
+                            return;
                     }
                     _updateArrangement(this);
+                    if(this.onListChange) {
+                        this.onListChange(action);
+                    }
                 },
                 addChild: function(comp, config) {
                     var index = config.layer.index;
@@ -2569,17 +2576,17 @@ var main = function() {
 
             _meta[Action.ADD_LAYER].schema = [
                 {key: 'name', type: 'string'},
-                {key: 'index', type: 'number', bits: 24}
+                {key: 'index', type: 'number', bits: 5}
             ];
             _meta[Action.REMOVE_LAYER].schema = (
             _meta[Action.SELECT_LAYER].schema = (
             _meta[Action.SHOW_LAYER].schema = (
             _meta[Action.HIDE_LAYER].schema = [
-                {key: 'index', type: 'number', bits: 24}
+                {key: 'index', type: 'number', bits: 5}
             ])));
             _meta[Action.SWAP_LAYERS].schema = [
-                {key: 'index1', type: 'number', bits: 24},
-                {key: 'index2', type: 'number', bits: 24}
+                {key: 'index1', type: 'number', bits: 5},
+                {key: 'index2', type: 'number', bits: 5}
             ];
             _meta[Action.DRAW].schema = [
                 {key: 'color', type: 'color'},
@@ -2587,7 +2594,7 @@ var main = function() {
                 {key: 'size', type: 'number', bits: 7},
                 {key: 'blur', type: 'number', bits: 7},
                 {key: 'points', type: 'array', bits: 24,
-                    content: {type: 'number', bits: 14, step: 0.25}
+                    content: {type: 'number', bits: 12, step: 0.25}
                 }
             ];
             _meta[Action.ERASE].schema = [
@@ -2595,7 +2602,7 @@ var main = function() {
                 {key: 'size', type: 'number', bits: 7},
                 {key: 'blur', type: 'number', bits: 7},
                 {key: 'points', type: 'array', bits: 24,
-                    content: {type: 'number', bits: 14, step: 0.25}
+                    content: {type: 'number', bits: 12, step: 0.25}
                 }
             ];
 
@@ -3331,6 +3338,8 @@ var main = function() {
         })();
         layersPanel = (function() {
             
+            // Must change action bits if this ever changes
+            var _MAX_LAYERS = 32;
             var layersAdded = 1;
             
             var layersPanel = new Panel({
@@ -3399,7 +3408,11 @@ var main = function() {
             });
             layerList = new LayerList({
                 parent: scroller,
-                canvas: canvas
+                canvas: canvas,
+                onListChange: function() {
+                    var count = canvas.layers.length;
+                    newLayerButton.setEnabled(count < _MAX_LAYERS);
+                }
             });
             
             return layersPanel;
