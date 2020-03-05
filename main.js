@@ -1747,6 +1747,10 @@ var main = function() {
                     return change;
                 },
                 mousePressed: function(e) {
+                    if(this.isFullscreen()) {
+                        this.toggleFullscreen(false);
+                        return;
+                    }
                     e = _toUserCoords(this, e.x, e.y);
                     if(pjs.mouseButton === pjs.LEFT) {
                         var layer = this.layers[this.currentLayer];
