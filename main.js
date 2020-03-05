@@ -2873,6 +2873,23 @@ var main = function() {
                 g.scale(1,-1);
                 _drawUpIcon(g);
             };
+            var _drawFullscreenIcon = function(g) {
+                var o = 43; // Outer
+                var i = 33; // Inner
+                var s = 10; // Space
+                g.scale(g.width/100, g.height/100);
+                g.translate(50, 50);
+                g.noStroke();
+                g.fill(_color);
+                g.rect(-o, -o, o-s, o-i);
+                g.rect(-o, -o, o-i, o-s);
+                g.rect( s, -o, o-s, o-i);
+                g.rect( i, -o, o-i, o-s);
+                g.rect(-o,  i, o-s, o-i);
+                g.rect(-o,  s, o-i, o-s);
+                g.rect( s,  i, o-s, o-i);
+                g.rect( i,  s, o-i, o-s);
+            };
             
             var _drawWinstonIcon = function(g) {
                 g.image(pjs.getImage("creatures/Winston"),
@@ -2922,14 +2939,15 @@ var main = function() {
             ButtonIcons.remove  = Button.createIcon(_drawRemoveIcon);
             ButtonIcons.none    = Button.createIcon(function(){});
             _color = Button.prototype.foreground;
-            ButtonIcons.brush  = Button.createIcon(_drawBrushIcon);
-            ButtonIcons.eraser = Button.createIcon(_drawEraserIcon);
-            ButtonIcons.stroke = Button.createIcon(_drawStrokeIcon);
-            ButtonIcons.layers = Button.createIcon(_drawLayersIcon);
-            ButtonIcons.select = Button.createIcon(_drawSelectIcon);
-            ButtonIcons.show   = Button.createIcon(_drawShowIcon);
-            ButtonIcons.up     = Button.createIcon(_drawUpIcon);
-            ButtonIcons.down   = Button.createIcon(_drawDownIcon);
+            ButtonIcons.brush      = Button.createIcon(_drawBrushIcon);
+            ButtonIcons.eraser     = Button.createIcon(_drawEraserIcon);
+            ButtonIcons.stroke     = Button.createIcon(_drawStrokeIcon);
+            ButtonIcons.layers     = Button.createIcon(_drawLayersIcon);
+            ButtonIcons.select     = Button.createIcon(_drawSelectIcon);
+            ButtonIcons.show       = Button.createIcon(_drawShowIcon);
+            ButtonIcons.up         = Button.createIcon(_drawUpIcon);
+            ButtonIcons.down       = Button.createIcon(_drawDownIcon);
+            ButtonIcons.fullscreen = Button.createIcon(_drawFullscreenIcon);
             _color = Button.prototype.foregroundActive;
             ButtonIcons.brushActive  = Button.createIcon(_drawBrushIcon);
             ButtonIcons.eraserActive = Button.createIcon(_drawEraserIcon);
@@ -3563,7 +3581,8 @@ var main = function() {
                 onToggle: function(active) {
                     if(active)
                         { canvas.toggleFullscreen(true); }
-                }
+                },
+                icon: ButtonIcons.fullscreen,
             });
             var saveButton = new Button({
                 parent: toolbar,
