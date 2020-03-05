@@ -2568,6 +2568,8 @@ var main = function() {
                 return data.substring(0, from) + append;
             };
             _stripTrailingZeros = function(data) {
+                if(data === "")
+                    { return ""; }
                 var end = data.length;
                 while(!_charToCode(data.charAt(end - 1))) {
                     end--;
