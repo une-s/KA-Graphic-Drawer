@@ -3491,7 +3491,7 @@ var main = function() {
             
             var colorButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 147,
+                x: pjs.width - 183,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3514,7 +3514,7 @@ var main = function() {
             });
             var strokeButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 112,
+                x: pjs.width - 148,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3529,7 +3529,7 @@ var main = function() {
             });
             var layersButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 77,
+                x: pjs.width - 113,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3541,6 +3541,16 @@ var main = function() {
                 },
                 icon: ButtonIcons.layers,
                 iconActive: ButtonIcons.layersActive
+            });
+
+            var fullscreenButton = new Button({
+                parent: toolbar,
+                x: pjs.width - 72,
+                y: 3,
+                onToggle: function(active) {
+                    if(active)
+                        { canvas.toggleFullscreen(true); }
+                }
             });
             var saveButton = new Button({
                 parent: toolbar,
