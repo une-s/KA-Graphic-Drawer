@@ -2432,9 +2432,9 @@ var main = function() {
 
             var _DEFAULT_VAR_NAME = "save";
             var _CHARS ="0123456789ABCDEFGHIJKLMNOPQRSTUV"+
-                        "WXYZabcdefghijklmnopqrstuvwxyz+="+
-                        "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"+
-                        "àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ";
+                        "WXYZabcdefghijklmnopqrstuvwxyz_Ÿ"+
+                        "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖŒØÙÚÛÜÝÞß"+
+                        "àáâãäåæçèéêëìíîïðñòóôõöœøùúûüýþÿ";
 
             var _map, _charToCode, _codeToChar, _read, _write, _stripTrailingZeros;
 
