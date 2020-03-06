@@ -1738,6 +1738,19 @@ var main = function() {
                     }
                     this.needsRedraw = false;
                 },
+                playThrough: function(stop) {
+                    if(stop === undefined)
+                        { stop = this.actions.length - 1; }
+                    if(stop <= this.currentAction)
+                        { return; }
+                    this.toggleFullscreen(true);
+                    this.playStop = stop;
+                },
+                isPlayingThrough: function() {
+                    if(!this.isFullscreen() || this.playStop === undefined)
+                        { return false; }
+                    return this.playStop > this.currentAction;
+                },
                 toggleFullscreen: function(on) {
                     var sup = Component.prototype;
                     var change = sup.toggleFullscreen.call(this, on);
@@ -1748,7 +1761,8 @@ var main = function() {
                 },
                 mousePressed: function(e) {
                     if(this.isFullscreen()) {
-                        this.toggleFullscreen(false);
+                        if(!this.isPlayingThrough())
+                            { this.toggleFullscreen(false); }
                         return;
                     }
                     e = _toUserCoords(this, e.x, e.y);
@@ -3650,6 +3664,11 @@ var main = function() {
             return toolbar;
         })();
         
+        if(loadedData.actions) {
+            canvas.actions = loadedData.actions;
+            canvas.playThrough(loadedData.currentAction);
+        }
+
         // Global event handlers {
         pjs.mousePressed = function() {
             var x = pjs.mouseX;
