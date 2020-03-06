@@ -2875,6 +2875,36 @@ var main = function() {
                 g.scale(1,-1);
                 _drawUpIcon(g);
             };
+            var _drawSaveIcon = function(g) {
+                g.scale(g.width/100, g.height/100);
+                g.translate(50, 50);
+                g.strokeWeight(20);
+                g.strokeJoin(pjs.ROUND);
+                g.stroke(_color);
+                g.fill(_color);
+                g.rectMode(pjs.CENTER);
+                g.rect(0, 0, 70, 70);
+                
+                var mask = Graphics.create(g.width, g.height);
+                mask.beginDraw();
+                mask.scale(g.width/100, g.height/100);
+                mask.translate(50, 50);
+                mask.stroke(255);
+                mask.strokeWeight(5);
+                mask.strokeJoin(pjs.ROUND);
+                mask.fill(255);
+                mask.rectMode(pjs.CENTER);
+                mask.rect(-10, -35, 45, 30);
+                mask.rect(0, 20, 55, 30);
+                mask.rotate(0.25 * pjs.PI);
+                mask.rect(0, -70, 100, 40);
+                Graphics.negate(mask);
+                Graphics.mask(g, mask);
+                mask.endDraw();
+                
+                g.noStroke();
+                g.rect(5, -33, 8, 20);
+            };
             var _drawFullscreenIcon = function(g) {
                 var o = 43; // Outer
                 var i = 33; // Inner
@@ -2949,6 +2979,7 @@ var main = function() {
             ButtonIcons.show       = Button.createIcon(_drawShowIcon);
             ButtonIcons.up         = Button.createIcon(_drawUpIcon);
             ButtonIcons.down       = Button.createIcon(_drawDownIcon);
+            ButtonIcons.save       = Button.createIcon(_drawSaveIcon);
             ButtonIcons.fullscreen = Button.createIcon(_drawFullscreenIcon);
             _color = Button.prototype.foregroundActive;
             ButtonIcons.brushActive  = Button.createIcon(_drawBrushIcon);
@@ -2959,6 +2990,7 @@ var main = function() {
             ButtonIcons.showActive   = Button.createIcon(_drawShowIcon);
             ButtonIcons.upActive     = Button.createIcon(_drawUpIcon);
             ButtonIcons.downActive   = Button.createIcon(_drawDownIcon);
+            ButtonIcons.saveActive   = Button.createIcon(_drawSaveIcon);
             
             return ButtonIcons;
         })();
@@ -3610,7 +3642,9 @@ var main = function() {
                             currentAction: canvas.currentAction
                         });
                     }
-                }
+                },
+                icon: ButtonIcons.save,
+                iconActive: ButtonIcons.saveActive
             });
             
             return toolbar;
