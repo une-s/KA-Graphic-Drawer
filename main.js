@@ -3018,7 +3018,7 @@ var main = function() {
                 ALPHA: 8,
                 BLUR: 7,
                 COLOR: 24,
-                ACTION_COUNT: 32,
+                ACTION_COUNT: 24,
                 ACTION_TYPE: 5,
                 CHAR_COUNT: 6,
                 CHAR_CODE: 8
@@ -3114,7 +3114,7 @@ var main = function() {
                     return 0xFF000000 | (data !== false ? data : defaults.COLOR);
                 },
                 importCurrentAction: function(data) {
-                    if(data === false || data === (1 << _bits.CURRENT_ACTION) - 1) {
+                    if(data === false || data === pjs.pow(2,_bits.ACTION_COUNT) - 1) {
                         return -1;
                     }
                     return data;
