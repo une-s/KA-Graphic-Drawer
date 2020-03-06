@@ -1738,15 +1738,25 @@ var main = function() {
                     }
                     this.needsRedraw = false;
                 },
-                playThrough: function(stop) {
-                    if(stop === undefined)
-                        { stop = this.actions.length - 1; }
-                    if(stop <= this.currentAction)
-                        { return; }
-                    this.toggleFullscreen(true);
-                    this.playStop = stop;
+                undoAll: function() {
+                    // TODO: Fill in.
+                    // To keep in mind:
+                    // - LayerList.prototype.update needs
+                    //   fixing for when clearing layers
+                    // - leyersPanel's layersAdded variable
                 },
-                isPlayingThrough: function() {
+                playback: function(stopAt) {
+                    if(stopAt === undefined)
+                        { stopAt = this.actions.length - 1; }
+                    if(stopAt === -1)
+                        { return; }
+                    if(this.currentAction > -1) {
+                        this.undoAll();
+                    }
+                    this.toggleFullscreen(true);
+                    this.playStop = stopAt;
+                },
+                isPlayingBack: function() {
                     if(!this.isFullscreen() || this.playStop === undefined)
                         { return false; }
                     return this.playStop > this.currentAction;
@@ -1761,7 +1771,7 @@ var main = function() {
                 },
                 mousePressed: function(e) {
                     if(this.isFullscreen()) {
-                        if(!this.isPlayingThrough())
+                        if(!this.isPlayingBack())
                             { this.toggleFullscreen(false); }
                         return;
                     }
@@ -3666,7 +3676,7 @@ var main = function() {
         
         if(loadedData.actions) {
             canvas.actions = loadedData.actions;
-            canvas.playThrough(loadedData.currentAction);
+            canvas.playback(loadedData.currentAction);
         }
 
         // Global event handlers {
