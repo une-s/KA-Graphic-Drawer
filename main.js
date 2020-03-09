@@ -1689,6 +1689,8 @@ var main = function() {
                 if(config.imageHeight) { this.imageHeight = config.imageHeight; }
                 if(config.backgroundOuter)
                     { this.backgroundOuter = config.backgroundOuter; }
+                if(config.onLayerListChange)
+                    { this.onLayerListChange = config.onLayerListChange; }
                 _initOrUpdate(this);
             };
             Canvas.prototype = Object.assign(Object.create(Component.prototype), {
@@ -1852,6 +1854,17 @@ var main = function() {
                 mouseLeft: function() {
                     pjs.cursor(pjs.ARROW);
                 },
+                addOnLayerListChange: function(callback) {
+                    if(this.onLayerListChange) {
+                        var callback2 = this.onLayerListChange;
+                        this.onLayerListChange = function() {
+                            callback();
+                            callback2();
+                        };
+                    } else {
+                        this.onLayerListChange = callback;
+                    }
+                },
                 addLayer: function(name) {
                     var layer = Object.assign(Object.create(_layerProto),{
                         name: name || "Layer " + this.layers.length,
@@ -1868,6 +1881,8 @@ var main = function() {
                     for(var i = layer.index + 1; i < this.layers.length; i++) {
                         this.layers[i].index = i;
                     }
+                    if(this.onLayerListChange)
+                        { this.onLayerListChange(); }
                 },
                 addAction: function(action, inProgress) {
                     if(!this.actionInProgress && !this.freezeActions) {
@@ -1927,6 +1942,8 @@ var main = function() {
                         index2: this.index
                     });
                     canvas.needsRedraw = true;
+                    if(canvas.onLayerListChange)
+                        { canvas.onLayerListChange(); }
                     return true;
                 },
                 remove: function() {
@@ -1945,6 +1962,8 @@ var main = function() {
                     });
                     this.index = -1;
                     this.canvas.needsRedraw = true;
+                    if(this.canvas.onLayerListChange)
+                        { this.canvas.onLayerListChange(); }
                 }
             };
             
@@ -2374,21 +2393,18 @@ var main = function() {
                 if(active) {
                     var layer = this.parent.layer;
                     layer.swap(layer.index + 1);
-                    this.parent.parent.update();
                 }
             };
             _moveDown = function(active) {
                 if(active) {
                     var layer = this.parent.layer;
                     layer.swap(layer.index - 1);
-                    this.parent.parent.update();
                 }
             };
             _remove = function(active) {
                 if(active) {
                     var layer = this.parent.layer;
                     layer.remove();
-                    this.parent.parent.update();
                 }
             };
             return LayerDetail;
@@ -2400,8 +2416,6 @@ var main = function() {
                 Component.call(this, config);
                 if(config.canvas)
                     { this.canvas = config.canvas; }
-                if(config.onListChange)
-                    { this.onListChange = config.onListChange; }
                 _init(this);
             };
             LayerList.prototype = Object.assign(Object.create(Component.prototype), {
@@ -2440,9 +2454,6 @@ var main = function() {
                         });
                     }
                     _updateArrangement(this);
-                    if(this.onListChange) {
-                        this.onListChange();
-                    }
                 },
                 addChild: function(comp, config) {
                     var index = config.layer.index;
@@ -2466,6 +2477,7 @@ var main = function() {
                         layer: layers[i]
                     });
                 }
+                comp.canvas.addOnLayerListChange(comp.update.bind(comp));
             };
             _calculateY = function(reverseIndex) {
                 return reverseIndex * (LayerDetail.prototype.height + 1);
@@ -3582,11 +3594,15 @@ var main = function() {
                 onToggle: function(active) {
                     if(active) {
                         canvas.addLayer(newLayerInput.text);
-                        layerList.update();
                         newLayerInput.text = "Layer " + (++layersAdded);
                     }
                 },
                 icon: ButtonIcons.add
+            });
+            
+            canvas.addOnLayerListChange(function() {
+                var count = canvas.layers.length;
+                newLayerButton.setEnabled(count < _MAX_LAYERS);
             });
             
             var layerslabel = new Component({
@@ -3611,11 +3627,7 @@ var main = function() {
             });
             layerList = new LayerList({
                 parent: scroller,
-                canvas: canvas,
-                onListChange: function() {
-                    var count = canvas.layers.length;
-                    newLayerButton.setEnabled(count < _MAX_LAYERS);
-                }
+                canvas: canvas
             });
             
             return layersPanel;
