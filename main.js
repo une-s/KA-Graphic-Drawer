@@ -2105,9 +2105,8 @@ var main = function() {
                         break;
                 }
                 this.freezeActions = false;
-                if(this.currentAction === this.playStop)
-                    { return true; }
-                return false;
+                
+                return this.currentAction === this.playStop;
             };
             
             return Canvas;
