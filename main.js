@@ -3126,6 +3126,7 @@ var main = function() {
                 ALPHA: 8,
                 BLUR: 7,
                 COLOR: 24,
+                LAYERS_ADDED: 20,
                 ACTION_COUNT: 24,
                 ACTION_TYPE: 5,
                 CHAR_COUNT: 6,
@@ -3151,6 +3152,7 @@ var main = function() {
                         io.write(_bits.ALPHA, data.alpha || defaults.ALPHA);
                         io.write(_bits.BLUR, data.blur || defaults.BLUR);
                         io.write(_bits.COLOR, data.color || defaults.COLOR);
+                        io.write(_bits.LAYERS_ADDED, data.layersAdded || 1);
                         if(data.actions) {
                             var curr = data.currentAction;
                             io.write(_bits.ACTION_COUNT, curr !== undefined ? curr : -1);
@@ -3183,6 +3185,7 @@ var main = function() {
                             alpha: _validator.filterAlpha(io.read(_bits.ALPHA)),
                             blur: _validator.filterBlur(io.read(_bits.BLUR)),
                             color: _converter.importColor(io.read(_bits.COLOR)),
+                            layersAdded: io.read(_bits.LAYERS_ADDED) || 1,
                             currentAction: _converter.importCurrentAction(io.read(_bits.ACTION_COUNT)),
                             actions: _converter.importActions(io)
                         };
@@ -3555,7 +3558,6 @@ var main = function() {
             
             // Must change action bits if this ever changes
             var _MAX_LAYERS = 32;
-            var layersAdded = 1;
             
             var layersPanel = new Panel({
                 x: pjs.width - 205,
@@ -3564,6 +3566,7 @@ var main = function() {
                 height: pjs.height - 40,
                 hidden: true
             });
+            layersPanel.layersAdded = loadedData.layersAdded || 1;
             
             var layerList;
             
@@ -3585,7 +3588,7 @@ var main = function() {
                 x: 5,
                 y: 22,
                 width: layersPanel.width - 48,
-                text: "Layer 1"
+                text: "Layer " + layersPanel.layersAdded
             });
             var newLayerButton = new Button({
                 parent: layersPanel,
@@ -3594,7 +3597,7 @@ var main = function() {
                 onToggle: function(active) {
                     if(active) {
                         canvas.addLayer(newLayerInput.text);
-                        newLayerInput.text = "Layer " + (++layersAdded);
+                        newLayerInput.text = "Layer " + (++layersPanel.layersAdded);
                     }
                 },
                 icon: ButtonIcons.add
@@ -3760,6 +3763,7 @@ var main = function() {
                             brushSize: canvas.size,
                             blur: canvas.blur,
                             color: canvas.color,
+                            layersAdded: layersPanel.layersAdded,
                             actions: canvas.actions,
                             currentAction: canvas.currentAction
                         });
