@@ -1680,7 +1680,7 @@ var main = function() {
         var Canvas = (function() {
             
             var _tools, _layerProto;
-            var _initOrUpdate, _toUserCoords, _drawAction, _dist;
+            var _initOrUpdate, _toUserCoords, _drawAction, _dist, _playback;
             
             var Canvas = function(config) {
                 config = config || {};
@@ -1753,8 +1753,16 @@ var main = function() {
                     if(this.currentAction > -1) {
                         this.undoAll();
                     }
-                    this.toggleFullscreen(true);
-                    this.playStop = stopAt;
+
+                    var canvas = this;
+                    canvas.toggleFullscreen(true);
+                    canvas.playStop = stopAt;
+                    
+                    var worker = Worker.getWorker();
+                    worker.addRepeatedTask(_playback.bind(this));
+                    worker.addSingleTask(function() {
+                        canvas.playStop = undefined;
+                    });
                 },
                 isPlayingBack: function() {
                     if(!this.isFullscreen() || this.playStop === undefined)
@@ -2072,6 +2080,34 @@ var main = function() {
                     }
                 }
                 return dist;
+            };
+            _playback = function(count) {
+                this.freezeActions = true;
+                var action = this.actions[++this.currentAction];
+                switch(action.action) {
+                    case Action.ADD_LAYER:
+                        this.addLayer(action.name);
+                        break;
+                    case Action.SELECT_LAYER:
+                        this.layers[action.index].select();
+                        break;
+                    case Action.SHOW_LAYER:
+                        this.layers[action.index].setVisible(true);
+                        break;
+                    case Action.HIDE_LAYER:
+                        this.layers[action.index].setVisible(false);
+                        break;
+                    case Action.SWAP_LAYERS:
+                        this.layers[action.index1].swap(action.index2);
+                        break;
+                    case Action.REMOVE_LAYER:
+                        this.layers[action.index].remove();
+                        break;
+                }
+                this.freezeActions = false;
+                if(this.currentAction === this.playStop)
+                    { return true; }
+                return false;
             };
             
             return Canvas;
@@ -2602,6 +2638,56 @@ var main = function() {
             };
 
             return IO;
+        })();
+        var Worker = (function() {
+            var Worker = function() {
+                this.tasks = {};
+                this.index = 0;
+                this.length = 0;
+            };
+            Worker.prototype = {
+                tasks: {},
+                index: 0,
+                length: 0,
+                addRepeatedTask: function(callback) {
+                    this.tasks[this.length++] = {
+                        callback: callback,
+                        repeats: true,
+                        calls: 0
+                    };
+                },
+                addSingleTask: function(callback) {
+                    this.tasks[this.length++] = {
+                        callback: callback,
+                        repeats: false
+                    };
+                },
+                hasPendingTasks: function() {
+                    return !!(this.tasks[this.index]);
+                },
+                work: function(millis) {
+                    millis = millis || 50;
+                    var start = pjs.millis();
+                    while(this.hasPendingTasks()) {
+                        if(pjs.millis() > start + millis)
+                            { return false; }
+                        var task = this.tasks[this.index];
+                        var del = true;
+                        if(task.repeats)
+                            { del = task.callback(task.calls++); }
+                        else
+                            { task.callback(); }
+                        if(del)
+                            { delete this.tasks[this.index++]; }
+                    }
+                    return true;
+                }
+            };
+
+            Worker.getWorker = function() {
+                return Worker.prototype;
+            };
+            return Worker;
         })();
 
         Action = (function() {
@@ -3765,11 +3851,16 @@ var main = function() {
         // }
 
         pjs.draw = function() {
+            var worker = Worker.getWorker();
+
             if(!pjs.focused) {
                 Component.clearFocus();
             }
             if(Component.hasChanges()) {
                 Component.drawAll();
+            }
+            if(worker.hasPendingTasks()) {
+                worker.work();
             }
             if(!pjs.show) {
                 pjs.background(255);
