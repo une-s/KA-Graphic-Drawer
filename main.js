@@ -1934,6 +1934,8 @@ var main = function() {
                         { this.canvas.currentLayer--; }
                     var layers = this.canvas.layers;
                     layers.splice(this.index, 1);
+                    if(layers.length && this.canvas.currentLayer === -1)
+                        { this.canvas.currentLayer = 0; }
                     for(var i = this.index; i < layers.length; i++) {
                         layers[i].index = i;
                     }
@@ -2358,9 +2360,9 @@ var main = function() {
             };
             _select = function(active) {
                 if(active) {
-                    var index = this.parent.layer.index;
-                    this.parent.parent.select(index);
+                    this.parent.layer.select();
                 }
+                this.parent.needsRedraw = true;
             };
             _toggleShow = function(active) {
                 this.parent.layer.setVisible(active);
@@ -2389,7 +2391,7 @@ var main = function() {
             return LayerDetail;
         })();
         var LayerList = (function() {
-            var _init, _addLayer, _calculateY, _updateArrangement;
+            var _init, _calculateY, _updateArrangement;
             var LayerList = function(config) {
                 config = config || {};
                 Component.call(this, config);
@@ -2400,30 +2402,43 @@ var main = function() {
                 _init(this);
             };
             LayerList.prototype = Object.assign(Object.create(Component.prototype), {
+                needsUpdate: function() {
+                    var canvas = this.canvas;
+                    var count = this.children.length;
+                    if(count !== canvas.layers.length )
+                        { return true; }
+                    for(var i = 0; i < count; i++) {
+                        if(this.children[i].layer !== canvas.layers[i])
+                            { return true; }
+                    }
+                    return false;
+                },
                 update: function() {
+                    if( !this.needsUpdate() )
+                        { return; }
                     var layers = this.canvas.layers;
-                    var currLayer = layers[this.canvas.currentLayer];
-                    var actions = this.canvas.actions;
-                    var action = actions[this.canvas.currentAction];
-                    switch(action.action) {
-                        case Action.ADD_LAYER:
-                            _addLayer(this, currLayer, action.name);
-                            break;
-                        case Action.SWAP_LAYERS:
-                            var comp1 = this.children[action.index1];
-                            var comp2 = this.children[action.index2];
-                            this.children[action.index1] = comp2;
-                            this.children[action.index2] = comp1;
-                            break;
-                        case Action.REMOVE_LAYER:
-                            this.removeChild(action.index);
-                            break;
-                        default:
-                            return;
+                    var countOld = this.children.length;
+                    var countNew = layers.length;
+                    var i = 0;
+                    for(; i < countOld && i < countNew; i++) {
+                        var layerComp = this.children[i];
+                        if(layerComp.layer !== layers[i]) {
+                            layerComp.layer = layers[i];
+                            layerComp.needsRedraw = true;
+                        }
+                    }
+                    while(i < countOld) {
+                        this.removeChild(--countOld);
+                    }
+                    while(i < countNew) {
+                        new LayerDetail({
+                            parent: this,
+                            layer: layers[i++]
+                        });
                     }
                     _updateArrangement(this);
                     if(this.onListChange) {
-                        this.onListChange(action);
+                        this.onListChange();
                     }
                 },
                 addChild: function(comp, config) {
@@ -2434,17 +2449,6 @@ var main = function() {
                         this.children.pop();
                         this.children.splice(index, 0, comp);
                     }
-                },
-                select: function(index) {
-                    if(this.selected) {
-                        if(this.selected.layer.index === index)
-                            { return; }
-                        this.selected.needsRedraw = true;
-                    }
-                    this.selected = this.children[index];
-                    this.selected.layer.select();
-                    this.selected.needsRedraw = true;
-                    Component.setChange();
                 },
                 draw: function(g) {
                     this.needsRedraw = false;
@@ -2459,12 +2463,6 @@ var main = function() {
                         layer: layers[i]
                     });
                 }
-            };
-            _addLayer = function(list, layer) {
-                new LayerDetail({
-                    parent: list,
-                    layer: layer
-                });
             };
             _calculateY = function(reverseIndex) {
                 return reverseIndex * (LayerDetail.prototype.height + 1);
