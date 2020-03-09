@@ -2105,6 +2105,9 @@ var main = function() {
                     case Action.REMOVE_LAYER:
                         this.layers[action.index].remove();
                         break;
+                    default:
+                        pjs.println('Error: Unrecognized action during playback: ' + Action.getLabel(action.action));
+                        break;
                 }
                 this.freezeActions = false;
                 
