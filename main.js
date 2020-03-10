@@ -16,7 +16,6 @@ var main = function() {
         var save = "";
 
         var VERSION = "1";
-
         // Track whether Ctrl/Shift/Alt are pressed
         var modifierKeys = {};
         
@@ -1689,8 +1688,8 @@ var main = function() {
                 if(config.imageHeight) { this.imageHeight = config.imageHeight; }
                 if(config.backgroundOuter)
                     { this.backgroundOuter = config.backgroundOuter; }
-                if(config.onLayerListChange)
-                    { this.onLayerListChange = config.onLayerListChange; }
+                if(config.onLayerChange)
+                    { this.onLayerChange = config.onLayerChange; }
                 _initOrUpdate(this);
             };
             Canvas.prototype = Object.assign(Object.create(Component.prototype), {
@@ -1854,15 +1853,15 @@ var main = function() {
                 mouseLeft: function() {
                     pjs.cursor(pjs.ARROW);
                 },
-                addOnLayerListChange: function(callback) {
-                    if(this.onLayerListChange) {
-                        var callback2 = this.onLayerListChange;
-                        this.onLayerListChange = function() {
+                addOnLayerChange: function(callback) {
+                    if(this.onLayerChange) {
+                        var callback2 = this.onLayerChange;
+                        this.onLayerChange = function() {
                             callback();
                             callback2();
                         };
                     } else {
-                        this.onLayerListChange = callback;
+                        this.onLayerChange = callback;
                     }
                 },
                 addLayer: function(name) {
@@ -1881,8 +1880,8 @@ var main = function() {
                     for(var i = layer.index + 1; i < this.layers.length; i++) {
                         this.layers[i].index = i;
                     }
-                    if(this.onLayerListChange)
-                        { this.onLayerListChange(); }
+                    if(this.onLayerChange)
+                        { this.onLayerChange(); }
                 },
                 addAction: function(action, inProgress) {
                     if(!this.actionInProgress && !this.freezeActions) {
@@ -1910,6 +1909,8 @@ var main = function() {
                         });
                         this.canvas.needsRedraw = true;
                         Component.setChange();
+                        if(this.onLayerChange)
+                            { this.onLayerChange(); }
                     }
                 },
                 isSelected: function() {
@@ -1922,6 +1923,8 @@ var main = function() {
                             action: Action.SELECT_LAYER,
                             index: this.index
                         });
+                        if(this.canvas.onLayerChange)
+                            { this.canvas.onLayerChange(); }
                     }
                 },
                 swap: function(index) {
@@ -1942,8 +1945,8 @@ var main = function() {
                         index2: this.index
                     });
                     canvas.needsRedraw = true;
-                    if(canvas.onLayerListChange)
-                        { canvas.onLayerListChange(); }
+                    if(canvas.onLayerChange)
+                        { canvas.onLayerChange(); }
                     return true;
                 },
                 remove: function() {
@@ -1962,8 +1965,8 @@ var main = function() {
                     });
                     this.index = -1;
                     this.canvas.needsRedraw = true;
-                    if(this.canvas.onLayerListChange)
-                        { this.canvas.onLayerListChange(); }
+                    if(this.canvas.onLayerChange)
+                        { this.canvas.onLayerChange(); }
                 }
             };
             
@@ -2381,10 +2384,8 @@ var main = function() {
                 });
             };
             _select = function(active) {
-                if(active) {
-                    this.parent.layer.select();
-                }
-                this.parent.needsRedraw = true;
+                if(active)
+                    { this.parent.layer.select(); }
             };
             _toggleShow = function(active) {
                 this.parent.layer.setVisible(active);
@@ -2419,10 +2420,13 @@ var main = function() {
                 _init(this);
             };
             LayerList.prototype = Object.assign(Object.create(Component.prototype), {
+                selected: -1,
                 needsUpdate: function() {
                     var canvas = this.canvas;
                     var count = this.children.length;
                     if(count !== canvas.layers.length )
+                        { return true; }
+                    if(canvas.currentLayer !== this.selected)
                         { return true; }
                     for(var i = 0; i < count; i++) {
                         if(this.children[i].layer !== canvas.layers[i])
@@ -2436,6 +2440,8 @@ var main = function() {
                     var layers = this.canvas.layers;
                     var countOld = this.children.length;
                     var countNew = layers.length;
+                    var selectedOld = this.selected;
+                    var selectedNew = this.canvas.currentLayer;
                     var i = 0;
                     for(; i < countOld && i < countNew; i++) {
                         var layerComp = this.children[i];
@@ -2452,6 +2458,16 @@ var main = function() {
                             parent: this,
                             layer: layers[i++]
                         });
+                    }
+                    if(selectedOld !== selectedNew) {
+                        if(selectedNew >= 0) {
+                            this.children[selectedNew].selectButton.setActive(true);
+                            this.children[selectedNew].needsRedraw = true;
+                        }
+                        if(selectedOld >= 0 && selectedOld < countNew) {
+                            this.children[selectedOld].needsRedraw = true;
+                        }
+                        this.selected = selectedNew;
                     }
                     _updateArrangement(this);
                 },
@@ -2477,7 +2493,7 @@ var main = function() {
                         layer: layers[i]
                     });
                 }
-                comp.canvas.addOnLayerListChange(comp.update.bind(comp));
+                comp.canvas.addOnLayerChange(comp.update.bind(comp));
             };
             _calculateY = function(reverseIndex) {
                 return reverseIndex * (LayerDetail.prototype.height + 1);
@@ -2491,8 +2507,6 @@ var main = function() {
                     child.setLocation(child.x, y);
                     child.upButton.setEnabled(i !== length - 1);
                     child.downButton.setEnabled(i !== 0);
-                    if(i === selected)
-                        { child.selectButton.setActive(true); }
                 }
                 var height = _calculateY(comp.children.length) - 1;
                 comp.resize(comp.width, height);
@@ -3603,7 +3617,7 @@ var main = function() {
                 icon: ButtonIcons.add
             });
             
-            canvas.addOnLayerListChange(function() {
+            canvas.addOnLayerChange(function() {
                 var count = canvas.layers.length;
                 newLayerButton.setEnabled(count < _MAX_LAYERS);
             });
