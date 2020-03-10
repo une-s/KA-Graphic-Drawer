@@ -2406,6 +2406,7 @@ var main = function() {
                 if(active) {
                     var layer = this.parent.layer;
                     layer.remove();
+                    this.setActive(false);
                 }
             };
             return LayerDetail;
