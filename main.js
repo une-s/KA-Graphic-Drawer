@@ -2891,9 +2891,11 @@ var main = function() {
                             data1[i1+3] = alp1;
                             break;
                         case 'mask':
-                            data1[i1  ] *= 1 - (1 - red2/255)*opacity;
-                            data1[i1+1] *= 1 - (1 - grn2/255)*opacity;
-                            data1[i1+2] *= 1 - (1 - blu2/255)*opacity;
+                            if(alp2 > 0) {
+                                data1[i1  ] *= 1 - (1 - red2/255)*opacity;
+                                data1[i1+1] *= 1 - (1 - grn2/255)*opacity;
+                                data1[i1+2] *= 1 - (1 - blu2/255)*opacity;
+                            }
                             data1[i1+3] *= 1 - (1 - alp2/255)*opacity;
                             break;
                         }
