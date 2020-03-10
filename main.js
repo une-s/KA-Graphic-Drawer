@@ -1684,6 +1684,7 @@ var main = function() {
             var Canvas = function(config) {
                 config = config || {};
                 Component.call(this, config);
+                if(config.tool) { this.setTool(config.tool); }
                 if(config.imageWidth ) { this.imageWidth  = config.imageWidth; }
                 if(config.imageHeight) { this.imageHeight = config.imageHeight; }
                 if(config.backgroundOuter)
@@ -1714,6 +1715,9 @@ var main = function() {
                         return true;
                     }
                     return false;
+                },
+                getTool: function() {
+                    return _tools[this.tool];
                 },
                 draw: function(g) {
                     var w = this.imageWidth;
@@ -2126,6 +2130,23 @@ var main = function() {
                         break;
                     case Action.REMOVE_LAYER:
                         this.layers[action.index].remove();
+                        break;
+                    case Action.DRAW:
+                    case Action.ERASE:
+                        var g = this.layers[this.currentLayer].graphics;
+                        var w = this.imageWidth;
+                        var h = this.imageHeight;
+                        var bg = action.action === Action.DRAW ? 0 : -1;
+                        action.tempData = {
+                            drawnPts: 0,
+                            graphics: Graphics.create(w, h, bg)
+                        };
+                        g.beginDraw();
+                        _drawAction(g, action);
+                        g.endDraw();
+                        delete action.tempData;
+                        this.needsRedraw = true;
+                        Component.setChange();
                         break;
                     default:
                         pjs.println('Error: Unrecognized action during playback: ' + Action.getLabel(action.action));
@@ -3377,7 +3398,8 @@ var main = function() {
             y: 40,
             height: pjs.height - 40,
             imageWidth: loadedData.width || defaults.WIDTH,
-            imageHeight: loadedData.height || defaults.HEIGHT
+            imageHeight: loadedData.height || defaults.HEIGHT,
+            tool: loadedData.tool
         });
         colorPanel = (function() {
             var colorPanel = new Panel({
@@ -3665,7 +3687,7 @@ var main = function() {
                 cropToParent: true,
                 buttonGroup: toolButtons,
                 clickBehavior: Button.ACTIVATE,
-                isActive: true,
+                isActive: canvas.getTool() === 'brush',
                 onToggle: function(active) {
                     if(active)
                         { canvas.setTool('brush'); }
@@ -3679,6 +3701,7 @@ var main = function() {
                 y: 3,
                 buttonGroup: toolButtons,
                 clickBehavior: Button.ACTIVATE,
+                isActive: canvas.getTool() === 'eraser',
                 onToggle: function(active) {
                     if(active)
                         { canvas.setTool('eraser'); }
