@@ -3085,7 +3085,46 @@ var main = function() {
                 g.rect( s,  i, o-s, o-i);
                 g.rect( i,  s, o-i, o-s);
             };
-            
+            var _drawPlaybackIcon = function(g) {
+                var w = 100; // Width
+                var h = 100; // Height
+                var w2 = 86; // Width inner
+                var h2 = 54; // Height inner
+                var w3 = 16; // Width holes
+                var h3 = 12; // Height holes
+                var wt = 20; // Width triangle
+                var ht = 24; // Height triangle
+                var m = (h + h2)/4;
+                g.scale(g.width/100, g.height/100);
+                g.translate(50, 50);
+                g.noStroke();
+                g.fill(_color);
+                g.rectMode(pjs.CENTER);
+                g.rect(0, 0, w, h);
+
+                var mask = Graphics.create(g.width, g.height);
+                mask.beginDraw();
+                mask.scale(g.width/100, g.height/100);
+                mask.translate(50, 50);
+                mask.noStroke();
+                mask.fill(255);
+                mask.rectMode(pjs.CENTER);
+                mask.rect(0, 0, w2, h2);
+                mask.rect(-3/8*w, -m, w3, h3);
+                mask.rect(-3/8*w,  m, w3, h3);
+                mask.rect(-1/8*w, -m, w3, h3);
+                mask.rect(-1/8*w,  m, w3, h3);
+                mask.rect( 1/8*w, -m, w3, h3);
+                mask.rect( 1/8*w,  m, w3, h3);
+                mask.rect( 3/8*w, -m, w3, h3);
+                mask.rect( 3/8*w,  m, w3, h3);
+                Graphics.negate(mask);
+                Graphics.mask(g, mask);
+                mask.endDraw();
+
+                g.triangle(-wt,-ht,wt,0,-wt,ht);
+            };
+
             var _drawWinstonIcon = function(g) {
                 g.image(pjs.getImage("creatures/Winston"),
                     0, 0, g.width, g.height);
@@ -3144,6 +3183,7 @@ var main = function() {
             ButtonIcons.down       = Button.createIcon(_drawDownIcon);
             ButtonIcons.save       = Button.createIcon(_drawSaveIcon);
             ButtonIcons.fullscreen = Button.createIcon(_drawFullscreenIcon);
+            ButtonIcons.playback   = Button.createIcon(_drawPlaybackIcon);
             _color = Button.prototype.foregroundActive;
             ButtonIcons.brushActive  = Button.createIcon(_drawBrushIcon);
             ButtonIcons.eraserActive = Button.createIcon(_drawEraserIcon);
@@ -3800,7 +3840,8 @@ var main = function() {
                     if(active) {
                         canvas.playback(canvas.currentAction);
                     }
-                }
+                },
+                icon: ButtonIcons.playback
             });
             var saveButton = new Button({
                 parent: toolbar,
