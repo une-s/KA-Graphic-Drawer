@@ -3714,7 +3714,7 @@ var main = function() {
             
             var colorButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 183,
+                x: pjs.width - 218,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3737,7 +3737,7 @@ var main = function() {
             });
             var strokeButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 148,
+                x: pjs.width - 183,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3752,7 +3752,7 @@ var main = function() {
             });
             var layersButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 113,
+                x: pjs.width - 148,
                 y: 3,
                 buttonGroup: propertyButtons,
                 clickBehavior: Button.TOGGLE,
@@ -3768,7 +3768,7 @@ var main = function() {
 
             var separator = new Component({
                 parent: toolbar,
-                x: pjs.width - 76,
+                x: pjs.width - 111,
                 y: 5,
                 width: 1,
                 height: toolbar.height - 10,
@@ -3781,13 +3781,23 @@ var main = function() {
 
             var fullscreenButton = new Button({
                 parent: toolbar,
-                x: pjs.width - 72,
+                x: pjs.width - 107,
                 y: 3,
                 onToggle: function(active) {
                     if(active)
                         { canvas.toggleFullscreen(true); }
                 },
                 icon: ButtonIcons.fullscreen,
+            });
+            var playbackButton = new Button({
+                parent: toolbar,
+                x: pjs.width - 72,
+                y: 3,
+                onToggle: function(active) {
+                    if(active) {
+
+                    }
+                }
             });
             var saveButton = new Button({
                 parent: toolbar,
