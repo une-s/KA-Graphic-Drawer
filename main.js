@@ -20,8 +20,8 @@ var main = function() {
         var modifierKeys = {};
         
         var defaults = {
-            WIDTH: 400,
-            HEIGHT: 400,
+            WIDTH: 400,  // Supports 400, 500, 600
+            HEIGHT: 400, // Supports 400, 500, 600
             COLOR: pjs.color(0, 0, 0),
             BRUSH_SIZE: 5,
             ALPHA: 255,
