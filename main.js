@@ -3499,7 +3499,7 @@ var main = function() {
             var inputX = 104;
             var inputY = 23;
             var dist = 42;
-            var labelText = ["Brush Size", "Alpha", "Blur"];
+            var labelText = ["Brush Size", "Opacity", "Blur"];
             
             var strokePanel = new Panel({
                 x: pjs.width - width,
