@@ -1744,11 +1744,14 @@ var main = function() {
                     this.needsRedraw = false;
                 },
                 undoAll: function() {
-                    // TODO: Fill in.
-                    // To keep in mind:
-                    // - LayerList.prototype.update needs
-                    //   fixing for when clearing layers
-                    // - leyersPanel's layersAdded variable
+                    this.currentAction = -1;
+                    this.currentLayer = -1;
+                    this.layers = [];
+
+                    var cache = this.freezeActions;
+                    this.freezeActions = true;
+                    this.addLayer('Background');
+                    this.freezeActions = cache;
                 },
                 playback: function(stopAt) {
                     if(stopAt === undefined)
@@ -3795,7 +3798,7 @@ var main = function() {
                 y: 3,
                 onToggle: function(active) {
                     if(active) {
-
+                        canvas.playback(canvas.currentAction);
                     }
                 }
             });
