@@ -3982,17 +3982,18 @@ var main = function() {
     
     // Remove KA-injected code {
     init = init.toString()
+        .replace(/\s+?(?!\s)/g, ' ')
         .replace(/__env__\./g,'')
-        .replace(/\n +KAInfiniteLoopCount\+\+;/g,'')
-        .replace(/\n +if \(KAInfiniteLoopCount > 1000\) {[^']+?'.+?'[^}]+?}/g,'')
+        .replace(/KAInfiniteLoopCount\+\+;/g,'')
+        .replace(/if \(KAInfiniteLoopCount > 1000\) {[^']+?'.+?'[^}]+?}/g,'')
         .replace(/PJSCodeInjector.applyInstance\((.+?),.+?\)/, function(a,b) {
             return 'new ' + b;
         })
-        .replace(/function \([^)]*?\) {\n/,'');
-    init = init.substring(0, init.lastIndexOf('\n'));
+        .replace(/function \([^)]*?\) {/,'');
+    init = init.substring(0, init.lastIndexOf('}')-1);
     init = init.toString.constructor('pjs', init);
     // }
-    
+
     init(this);
 };
 if(show) {
